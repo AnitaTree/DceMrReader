@@ -9,6 +9,7 @@ from collections import Counter
 class PatientDirectoryReader(object):
 
     def __init__(self, dirNm):
+        """ Set up storage for series information. """
         self._dirNm = dirNm
         self._fileType = None
         self._suidNum = 0
@@ -22,6 +23,7 @@ class PatientDirectoryReader(object):
         self._dataSuid = None
 
     def _getFileType(self, dcm):
+        """ Check whether the file is DICOM, multiframe DICOM or NEMA."""
         if self._fileType is None:
             if 'SOPClassUID' in dcm:
                 if 'Enhanced' in str(dcm.SOPClassUID):
@@ -33,6 +35,7 @@ class PatientDirectoryReader(object):
         return self._fileType
 
     def _getImageTime(self, dcm):
+        """ Get the acquisition time of the file. """
         if 'AcquisitionTime' in dcm:
             # DICOM
             acqTime = dcm.AcquisitionTime
@@ -52,10 +55,12 @@ class PatientDirectoryReader(object):
         return time
 
     def _getFileInfoAndData(self, file):
-        #all the files should be safe to read
+        """
+
+        all the files should be safe to read"""
         dcm= dicom.read_file(file, stop_before_pixels=False, force=True)
-        #required for NEMA for the pixel_array access to work
         if not dcm.dir('SamplesPerPixel'):
+            #required for NEMA for the pixel_array access to work
             dcm.SamplesPerPixel = 1
         if 'SliceLocation' in dcm:
             sliceLocation = dcm.SliceLocation
