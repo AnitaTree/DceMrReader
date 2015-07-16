@@ -1,7 +1,5 @@
 __author__ = 'medabana'
 
-__author__ = 'medabana'
-
 from PySide import QtCore, QtGui
 import numpy as np
 
