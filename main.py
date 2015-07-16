@@ -3,7 +3,7 @@ __author__ = 'medabana'
 import sys
 from ControlMainWindow import *
 
-#testing
+#testing, testing
 if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
     mySW = ControlMainWindow()

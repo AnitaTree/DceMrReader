@@ -138,6 +138,7 @@ class ControlMainWindow(QtGui.QMainWindow):
             self._ui.spinSlice.setValue(self._currSlice)
 
     def _roiPressed(self):
+        """ Toggle roiFreehand button. """
         self._ui.roiFreehand.setChecked(False)
         self._ui.label.setROImode(not self._ui.roiButton.isChecked())
         self._ui.label.setFreehandMode(self._ui.roiFreehand.isChecked())
