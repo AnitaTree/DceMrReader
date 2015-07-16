@@ -2,12 +2,12 @@ __author__ = 'medabana'
 
 from ImageDisplay import *
 from SeriesSelection import *
-from DirectoryReaderSelector import *
+from RecursiveDirectoryReader import RecursiveDirectoryReader
+from DicomDirFileReader import DicomDirFileReader
+import os
 
 class ControlMainWindow(QtGui.QMainWindow):
-    """
-
-    """
+    """ Responsible for the main GUI window."""
     def __init__(self, parent=None):
         """ Set up the main window and connect buttons/sliders etc. """
         super(ControlMainWindow, self).__init__(parent)
@@ -28,7 +28,7 @@ class ControlMainWindow(QtGui.QMainWindow):
         self._ui.spinSlice.valueChanged.connect(self._changeSlice)
         self._ui.spinTime.valueChanged.connect(self._changeTime)
         self._ui.actionOpen.triggered.connect(self._displaySeriesNames)
-        self._ui.label.pictureClicked.connect(self._getVoxelValue)
+        self._ui.label.pictureClicked.connect(self._showVoxelValue)
 
         # Connect the roi buttons to functions.
         self._ui.roiClear.pressed.connect(self._ui.label.clearROI)
@@ -37,36 +37,40 @@ class ControlMainWindow(QtGui.QMainWindow):
         self._ui.roiButton.pressed.connect(self._roiPressed)
         self._ui.roiFreehand.pressed.connect(self._freehandPressed)
 
-    def _displaySeriesNames(self):
-        """ Requests the DICOM directory and displays the found protocols. """
+    def keyPressEvent(self, e):
+        """ Move around the series images using the H, J, F, and G keys. """
+        if e.key() == QtCore.Qt.Key_H:
+            self._changeTime(self._currTime - 1)
+            self._ui.spinTime.setValue(self._currTime)
+        elif e.key() == QtCore.Qt.Key_J:
+            self._changeTime(self._currTime + 1)
+            self._ui.spinTime.setValue(self._currTime)
+        elif e.key() == QtCore.Qt.Key_F:
+            self._changeSlice(self._currSlice - 1)
+            self._ui.spinSlice.setValue(self._currSlice)
+        elif e.key() == QtCore.Qt.Key_G:
+            self._changeSlice(self._currSlice + 1)
+            self._ui.spinSlice.setValue(self._currSlice)
 
-        # Ask for the DICOM directory.
-        self.dcmDir= QtGui.QFileDialog.getExistingDirectory(None, 'Select DICOM directory', 'D:\\renalDatabase_anon')
-        if self.dcmDir == '':
-            return
+    def _calculateIndex(self):
+        """ Calculate the index into the data array from the subscripts """
+        index = (self._currSlice - 1) * self._nt + self._currTime - 1
+        return index
 
-        # Get the appropriate type of directory reader for the data.
-        # And from the reader get the protocol names.
-        self.seriesReader = DirectoryReaderSelector().getDirectoryReader(self.dcmDir)
-        seriesNames= self.seriesReader.getSeriesNames()
+    def _changeSlice(self, num):
+        """ Change the slice being displayed """
+        if num > 0 and num <= self._nz:
+            self._currSlice= num
+            self._setSlice()
 
-        # Display the protocols to the user.
-        self.scrArea= QtGui.QScrollArea()
-        seriesSelect= Ui_SeriesSelection()
-        seriesSelect.setupUi(self.scrArea)
-        self.model = QtGui.QStandardItemModel(seriesSelect.listView)
-        for name in seriesNames:
-            item= QtGui.QStandardItem(name)
-            item.setEditable(False)
-            self.model.appendRow(item)
-        seriesSelect.listView.setModel(self.model)
-        seriesSelect.listView.doubleClicked[QtCore.QModelIndex].connect(self._displaySeries)
-        seriesSelect.label_dcmDir.setText(self.dcmDir)
-        self.scrArea.show()
+    def _changeTime(self, num):
+        """ Change the timepoint being displayed """
+        if num > 0 and num <= self._nt:
+            self._currTime= num
+            self._setSlice()
 
     def _displaySeries(self, index):
         """ Gets the data for the selected series and displays an initial image. """
-
         # Get the selected protocol name
         item = self.model.itemFromIndex(index)
         print "double clicked", item.text()
@@ -95,22 +99,56 @@ class ControlMainWindow(QtGui.QMainWindow):
         self._setSlice()
         self._ui.seriesLabel.setText(seriesName)
 
-    def _calculateIndex(self):
-        """ Calculate the index into the data array from the subscripts """
-        index = (self._currSlice - 1) * self._nt + self._currTime - 1
-        return index
+    def _displaySeriesNames(self):
+        """ Request the DICOM directory from the user and displays the found protocols. """
+        # Ask for the DICOM directory.
+        self.dcmDir= QtGui.QFileDialog.getExistingDirectory(None, 'Select DICOM directory', 'D:\\renalDatabase_anon')
+        if self.dcmDir == '':
+            return
 
-    def _changeSlice(self, num):
-        """ Change the slice being displayed """
-        if num > 0 and num <= self._nz:
-            self._currSlice= num
-            self._setSlice()
+        # Get the appropriate type of directory reader for the data.
+        # And from the reader get the protocol names.
+        self.seriesReader = self._getDirectoryReader()
+        seriesNames= self.seriesReader.getSeriesNames()
 
-    def _changeTime(self, num):
-        """ Change the timepoint being displayed """
-        if num > 0 and num <= self._nt:
-            self._currTime= num
-            self._setSlice()
+        # Display the protocols to the user.
+        self.scrArea= QtGui.QScrollArea()
+        seriesSelect= Ui_SeriesSelection()
+        seriesSelect.setupUi(self.scrArea)
+        self.model = QtGui.QStandardItemModel(seriesSelect.listView)
+        for name in seriesNames:
+            item= QtGui.QStandardItem(name)
+            item.setEditable(False)
+            self.model.appendRow(item)
+        seriesSelect.listView.setModel(self.model)
+        seriesSelect.listView.doubleClicked[QtCore.QModelIndex].connect(self._displaySeries)
+        seriesSelect.label_dcmDir.setText(self.dcmDir)
+        self.scrArea.show()
+
+    def _freehandPressed(self):
+        """ Toggle roiButton """
+        self._ui.roiButton.setChecked(False)
+        self._ui.label.setFreehandMode(not self._ui.roiFreehand.isChecked())
+        self._ui.label.setROImode(self._ui.roiButton.isChecked())
+
+    def _getDirectoryReader(self):
+        """ Return the correct directory reader depending on whether there is a DICOMDIR file. """
+        dirName= self.dcmDir
+        dirNameSearch= dirName
+        if os.path.basename(dirName) == 'DICOM':
+            dirNameSearch= os.path.dirname(dirName)
+            dirName= dirNameSearch
+        for baseDir, dirNames, files in os.walk(dirNameSearch):
+            for file in files:
+                if file == 'DICOMDIR':
+                    return DicomDirFileReader(dirName, os.path.join(baseDir, file))
+        return RecursiveDirectoryReader(dirName)
+
+    def _roiPressed(self):
+        """ Toggle roiFreehand button. """
+        self._ui.roiFreehand.setChecked(False)
+        self._ui.label.setROImode(not self._ui.roiButton.isChecked())
+        self._ui.label.setFreehandMode(self._ui.roiFreehand.isChecked())
 
     def _setSlice(self):
         """ Display the slice. """
@@ -122,32 +160,7 @@ class ControlMainWindow(QtGui.QMainWindow):
         else:
             self._ui.fileNameLabel.setText(self.files[0] + " " + str(index))
 
-    def keyPressEvent(self, e):
-        """ Move around the series images using the H, J, F, and G keys. """
-        if e.key() == QtCore.Qt.Key_H:
-            self._changeTime(self._currTime - 1)
-            self._ui.spinTime.setValue(self._currTime)
-        elif e.key() == QtCore.Qt.Key_J:
-            self._changeTime(self._currTime + 1)
-            self._ui.spinTime.setValue(self._currTime)
-        elif e.key() == QtCore.Qt.Key_F:
-            self._changeSlice(self._currSlice - 1)
-            self._ui.spinSlice.setValue(self._currSlice)
-        elif e.key() == QtCore.Qt.Key_G:
-            self._changeSlice(self._currSlice + 1)
-            self._ui.spinSlice.setValue(self._currSlice)
-
-    def _roiPressed(self):
-        """ Toggle roiFreehand button. """
-        self._ui.roiFreehand.setChecked(False)
-        self._ui.label.setROImode(not self._ui.roiButton.isChecked())
-        self._ui.label.setFreehandMode(self._ui.roiFreehand.isChecked())
-
-    def _freehandPressed(self):
-        self._ui.roiButton.setChecked(False)
-        self._ui.label.setFreehandMode(not self._ui.roiFreehand.isChecked())
-        self._ui.label.setROImode(self._ui.roiButton.isChecked())
-
-    def _getVoxelValue(self, x, y, value):
-        z= self._calculateIndex()
+    def _showVoxelValue(self, x, y, value):
+        """ Show the voxel subscripts and value on the GUI """
+        z = self._calculateIndex()
         self._ui.pixelVal.setText(str(x) + ', ' + str(y) + ', ' + str(z) + ": " + str(value))

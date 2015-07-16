@@ -5,18 +5,20 @@ import dicom
 from PatientDirectoryReader import PatientDirectoryReader
 
 class DicomDirFileReader(PatientDirectoryReader):
-
+    """Responsible for reading image directories where there is a DICOMDIR file."""
     def __init__(self, dirNm, dcmdirFile):
         PatientDirectoryReader.__init__(self, dirNm)
         self._gatherSeriesFileNames(dcmdirFile)
         print "using DICOMDIR file"
 
     def _gatherSeriesFileNames(self, file):
+        """ Read the DICOMDIR file and gather information on the image series. """
         ds= dicom.read_file(file)
         seriesRecord = None
         fileNames= []
         foundNewSeries = False
         foundImageSeries = False
+        # read through the data structure and pick out the series information.
         for i, record in enumerate(ds.DirectoryRecordSequence):
             if record.DirectoryRecordType == 'SERIES':
                 if foundImageSeries:

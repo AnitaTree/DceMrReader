@@ -5,49 +5,20 @@ import dicom
 import os
 
 class RecursiveDirectoryReader(PatientDirectoryReader):
-
+    """Responsible for reading image data when there is not a DICOMDIR file."""
     def __init__(self, dirNm):
         PatientDirectoryReader.__init__(self, dirNm)
         self._gatherSeriesFileNames(dirNm)
 
-    def _readImFileProtNameSuid(self, file):
-        if self._fileType == 'DICOM' or self._fileType is None:
-            try:
-                dcm= dicom.read_file(file, stop_before_pixels=False, force=False)
-                if self._fileType is None:
-                    if 'Enhanced' in str(dcm.SOPClassUID):
-                        self._fileType= 'enhancedDICOM'
-                    elif 'MR Image' in str(dcm.SOPClassUID):
-                        self._fileType= 'DICOM'
-            except Exception as why:
-                if self._fileType == 'DICOM':
-                    print file + " ", why
-                    raise Exception
-        if self._fileType == 'NEMA' or self._fileType is None:
-            try:
-                dcm= dicom.read_file(file, stop_before_pixels=False, force=True)
-                try:
-                    #need to do this check on all files opened, as the force=True
-                    #option will open all sorts of files
-                    if dcm.RecognitionCode == 'ACR-NEMA 2.0':
-                        if self._fileType is None:
-                            self._fileType= 'NEMA'
-                        #required for the pixel_array access to work
-                        if not dcm.dir('SamplesPerPixel'):
-                            dcm.SamplesPerPixel= 1
-                except Exception:
-                    raise Exception
-            except Exception as why:
-                    print file + " ", why
-                    raise Exception
-        try:
-            protName = dcm.SeriesDescription
-        except Exception as why:
-            print file + " ", why
-            raise Exception
-        return protName.lstrip(), dcm.SeriesInstanceUID, self._getImageTime(dcm)
+    def _gatherSeriesFileNames(self, dcmDir):
+        """ Get the series information, sort and enumerate the items. """
+        self._gatherSeriesFileNamesRecursive(dcmDir)
+        seriesSorted = sorted(self._suidAndTimeForProtocols.items(), key=lambda info: info[1])
+        for i, series in enumerate(seriesSorted):
+            self._protNamesOrdered.append(series[0])
 
     def _gatherSeriesFileNamesRecursive(self, dirNm):
+        """ Search the directory structure recursively and record information about the image series."""
         files = os.listdir(dirNm)
         for file in files:
             fileNm = os.path.join(dirNm, file)
@@ -69,10 +40,41 @@ class RecursiveDirectoryReader(PatientDirectoryReader):
             else:
                 self._gatherSeriesFileNamesRecursive(fileNm)
 
-    def _gatherSeriesFileNames(self, dcmDir):
-         # read files recursively
-        self._gatherSeriesFileNamesRecursive(dcmDir)
-        seriesSorted = sorted(self._suidAndTimeForProtocols.items(), key=lambda info: info[1])
-        for i, series in enumerate(seriesSorted):
-            self._protNamesOrdered.append(series[0])
+    def _readImFileProtNameSuid(self, file):
+        """ Get the protocol information from the given file. """
+        if self._fileType == 'DICOM' or self._fileType is None:
+            try:
+                dcm = dicom.read_file(file, stop_before_pixels=False, force=False)
+                if self._fileType is None:
+                    if 'Enhanced' in str(dcm.SOPClassUID):
+                        self._fileType = 'enhancedDICOM'
+                    elif 'MR Image' in str(dcm.SOPClassUID):
+                        self._fileType = 'DICOM'
+            except Exception as why:
+                if self._fileType == 'DICOM':
+                    print file + " ", why
+                    raise Exception
+        if self._fileType == 'NEMA' or self._fileType is None:
+            try:
+                dcm = dicom.read_file(file, stop_before_pixels=False, force=True)
+                try:
+                    #need to do this check on all files opened, as the force=True
+                    #option will open all sorts of files
+                    if dcm.RecognitionCode == 'ACR-NEMA 2.0':
+                        if self._fileType is None:
+                            self._fileType= 'NEMA'
+                        #required for the pixel_array access to work
+                        if not dcm.dir('SamplesPerPixel'):
+                            dcm.SamplesPerPixel= 1
+                except Exception:
+                    raise Exception
+            except Exception as why:
+                    print file + " ", why
+                    raise Exception
+        try:
+            protName = dcm.SeriesDescription
+        except Exception as why:
+            print file + " ", why
+            raise Exception
+        return protName.lstrip(), dcm.SeriesInstanceUID, self._getImageTime(dcm)
 
