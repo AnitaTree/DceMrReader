@@ -55,9 +55,10 @@ class PatientDirectoryReader(object):
         return time
 
     def _getFileInfoAndData(self, file):
-        """
+        """ Get info about the file and the pixel data.
 
-        all the files should be safe to read"""
+            Assumes all the files are safe to read.
+        """
         dcm= dicom.read_file(file, stop_before_pixels=False, force=True)
         if not dcm.dir('SamplesPerPixel'):
             #required for NEMA for the pixel_array access to work
@@ -71,6 +72,7 @@ class PatientDirectoryReader(object):
         return fileInfo, imageData
 
     def _setSeriesInfoAndData(self, suid):
+        """ Fill the class data structures the hold the information and Data for the SUID. """
         fileNames= self._filesForSuid[suid]
         seriesFileInfo= []
         # release data memory first
@@ -104,6 +106,7 @@ class PatientDirectoryReader(object):
         self._dataSuid = suid
 
     def getSequenceParameters(self, protName):
+        """ Get the matrix and time dimensions af the series. """
         if protName not in self._sequenceParameters:
             fileInfo= self._fileInfoForSuid[self._suidAndTimeForProtocols[protName][0]]
             dcm = dicom.read_file(os.path.join(self._dirNm, fileInfo[0][0]), stop_before_pixels=True, force= True)
