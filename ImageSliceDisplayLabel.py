@@ -15,6 +15,17 @@ class ImageSliceDisplayLabel(QtGui.QLabel):
         self._roiMode= False
         self._freehandMode= False
 
+    def clearROI(self):
+        for i in range(0, self._dims[0]):
+            self._roiPaths[i]= QtGui.QPainterPath()
+        self._setImageSlice()
+        self._displayImageSlice()
+
+    def clearSlice(self):
+        self._roiPaths[self._currSlice]= QtGui.QPainterPath()
+        self._setImageSlice()
+        self._displayImageSlice()
+
     def setData(self, imData):
         self._data= imData
         self._dims= imData.shape
@@ -22,53 +33,16 @@ class ImageSliceDisplayLabel(QtGui.QLabel):
         for i in range(0, self._dims[0]):
             self._roiPaths.append(QtGui.QPainterPath())
 
-    def setROImode(self, mode):
-        self._roiMode= mode
-
     def setFreehandMode(self, mode):
         self._freehandMode= mode
+
+    def setROImode(self, mode):
+        self._roiMode= mode
 
     def setSlice(self, index):
       self._currSlice= index
       self._setImageSlice()
       self._displayImageSlice()
-
-    def _setImageSlice(self):
-      sliceData= self._data[self._currSlice, :, :]
-      maxVal= sliceData.max()
-      if maxVal == 0:
-          maxVal= 1
-      sliceC = np.require((sliceData*255.0)/maxVal, np.uint32, 'C')
-      sliceRGB = np.zeros((self._dims[1], self._dims[2], 3), dtype=np.uint32)
-      sliceRGB[:, :, 0] = sliceC
-      sliceRGB[:, :, 1] = sliceC
-      sliceRGB[:, :, 2] = sliceC
-      self._displaySlice = (255 << 24 | sliceRGB[:,:,0] << 16 | sliceRGB[:,:,1] << 8 | sliceRGB[:,:,2])
-      self._im= QtGui.QImage(self._displaySlice, self._dims[1], self._dims[2], QtGui.QImage.Format_RGB32)
-
-    def _displayImageSlice(self):
-        draw = QtGui.QPainter(self._im)
-        draw.setOpacity(0.4)
-        draw.setBrush(QtCore.Qt.red)
-        draw.setPen(QtCore.Qt.yellow)
-        draw.drawPath(self._roiPaths[self._currSlice])
-        self.update()
-
-    def mousePressEvent(self, event):
-        x = event.x()
-        y = event.y()
-        xVox= self._dims[2] * x/self.geometry().width()
-        yVox= self._dims[1] * y/self.geometry().height()
-        if self._roiMode:
-            self._rectPt0= [xVox, yVox]
-            self.update()
-        elif self._freehandMode:
-            self._roiPaths[self._currSlice]= QtGui.QPainterPath(QtCore.QPoint(xVox, yVox))
-            self._setImageSlice()
-            self._displayImageSlice()
-        else:
-            value= self._data[self._currSlice, yVox, xVox]
-            self.pictureClicked.emit(xVox, yVox, value)
 
     def mouseMoveEvent(self, event):
         xVox= self._dims[2] * event.x()/self.geometry().width()
@@ -106,6 +80,22 @@ class ImageSliceDisplayLabel(QtGui.QLabel):
             self.update()
             self._roiPaths[self._currSlice]= path
 
+    def mousePressEvent(self, event):
+        x = event.x()
+        y = event.y()
+        xVox= self._dims[2] * x/self.geometry().width()
+        yVox= self._dims[1] * y/self.geometry().height()
+        if self._roiMode:
+            self._rectPt0= [xVox, yVox]
+            self.update()
+        elif self._freehandMode:
+            self._roiPaths[self._currSlice]= QtGui.QPainterPath(QtCore.QPoint(xVox, yVox))
+            self._setImageSlice()
+            self._displayImageSlice()
+        else:
+            value= self._data[self._currSlice, yVox, xVox]
+            self.pictureClicked.emit(xVox, yVox, value)
+
     def mouseReleaseEvent(self, event):
         if self._freehandMode:
             draw = QtGui.QPainter(self._im)
@@ -124,13 +114,23 @@ class ImageSliceDisplayLabel(QtGui.QLabel):
         painter = QtGui.QPainter(self)
         painter.drawImage(QtCore.QPoint(0, 0), scaledIm)
 
-    def clearSlice(self):
-        self._roiPaths[self._currSlice]= QtGui.QPainterPath()
-        self._setImageSlice()
-        self._displayImageSlice()
+    def _displayImageSlice(self):
+        draw = QtGui.QPainter(self._im)
+        draw.setOpacity(0.4)
+        draw.setBrush(QtCore.Qt.red)
+        draw.setPen(QtCore.Qt.yellow)
+        draw.drawPath(self._roiPaths[self._currSlice])
+        self.update()
 
-    def clearROI(self):
-        for i in range(0, self._dims[0]):
-            self._roiPaths[i]= QtGui.QPainterPath()
-        self._setImageSlice()
-        self._displayImageSlice()
+    def _setImageSlice(self):
+      sliceData= self._data[self._currSlice, :, :]
+      maxVal= sliceData.max()
+      if maxVal == 0:
+          maxVal= 1
+      sliceC = np.require((sliceData*255.0)/maxVal, np.uint32, 'C')
+      sliceRGB = np.zeros((self._dims[1], self._dims[2], 3), dtype=np.uint32)
+      sliceRGB[:, :, 0] = sliceC
+      sliceRGB[:, :, 1] = sliceC
+      sliceRGB[:, :, 2] = sliceC
+      self._displaySlice = (255 << 24 | sliceRGB[:,:,0] << 16 | sliceRGB[:,:,1] << 8 | sliceRGB[:,:,2])
+      self._im= QtGui.QImage(self._displaySlice, self._dims[1], self._dims[2], QtGui.QImage.Format_RGB32)
