@@ -1,8 +1,9 @@
 __author__ = 'medabana'
 
-from PatientDirectoryReader import PatientDirectoryReader
 import dicom
 import os
+
+from PatientDirectoryReader import PatientDirectoryReader
 
 class RecursiveDirectoryReader(PatientDirectoryReader):
     """Responsible for reading image data when there is not a DICOMDIR file."""

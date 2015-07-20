@@ -1,10 +1,11 @@
 __author__ = 'medabana'
 
+import os
+
 from ImageDisplay import *
 from SeriesSelection import *
 from RecursiveDirectoryReader import RecursiveDirectoryReader
 from DicomDirFileReader import DicomDirFileReader
-import os
 
 class ControlMainWindow(QtGui.QMainWindow):
     """ Responsible for the main GUI window."""
