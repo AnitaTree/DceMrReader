@@ -1,153 +1,79 @@
 __author__ = 'medabana'
 
-import os
+from PatientDirectoryReader import PatientDirectoryReader
 import dicom
-import numpy as np
-from datetime import datetime
-from collections import Counter
+import os
 
-class PatientDirectoryReader(object):
-    """ Responsible for reading and storing information about image files and series. """
+class RecursiveDirectoryReader(PatientDirectoryReader):
+    """Responsible for reading image data when there is not a DICOMDIR file."""
     def __init__(self, dirNm):
-        """ Set up storage for series information. """
-        self._dirNm = dirNm
-        self._fileType = None
-        self._suidNum = 0
-        self._filesForSuid = {}
-        self._suidAndTimeForProtocols = {}
-        self._fileInfoForSuid = {}
-        self._protNamesOrdered = []
-        self._sequenceParameters= {}
-        # only keep one set of data at a time for memory purposes
-        self._data = None
-        self._dataSuid = None
+        PatientDirectoryReader.__init__(self, dirNm)
+        self._gatherSeriesFileNames(dirNm)
 
-    def getImageData(self, protName):
-        """ Return the image data for a particular series. """
-        suid= self._suidAndTimeForProtocols[protName][0]
-        if self._dataSuid != suid:
-            self._setSeriesInfoAndData(suid)
-        return self._data
+    def _gatherSeriesFileNames(self, dcmDir):
+        """ Get the series information, sort and enumerate the items. """
+        self._gatherSeriesFileNamesRecursive(dcmDir)
+        seriesSorted = sorted(self._suidAndTimeForProtocols.items(), key=lambda info: info[1])
+        for i, series in enumerate(seriesSorted):
+            self._protNamesOrdered.append(series[0])
 
-    def getOrderedFileList(self, protName):
-        """ Return an ordered list of the files in a series. """
-        suid= self._suidAndTimeForProtocols[protName][0]
-        if suid not in self._fileInfoForSuid:
-            self._setSeriesInfoAndData(suid)
-        infoSorted = self._fileInfoForSuid[suid]
-        fileList = []
-        for i, file in enumerate(infoSorted):
-            fileList.append(file[0])
-        return fileList
-
-    def getSequenceParameters(self, protName):
-        """ Get the matrix and time dimensions af the series. """
-        if protName not in self._sequenceParameters:
-            fileInfo= self._fileInfoForSuid[self._suidAndTimeForProtocols[protName][0]]
-            dcm = dicom.read_file(os.path.join(self._dirNm, fileInfo[0][0]), stop_before_pixels=True, force= True)
-            acquisitionTimes= []
-            sliceLocations= []
-            for file in fileInfo:
-                acquisitionTimes.append(file[1])
-                sliceLocations.append(file[2])
-            if self._getFileType(dcm) != 'enhancedDICOM':
-                nt = Counter(sliceLocations)[sliceLocations[0]]
-                nz = Counter(acquisitionTimes)[acquisitionTimes[0]]
-                # for unusual cases e.g. bold
-                if nz*nt > len(fileInfo):
-                    nt= len(fileInfo)/nz
+    def _gatherSeriesFileNamesRecursive(self, dirNm):
+        """ Search the directory structure recursively and record information about the image series."""
+        files = os.listdir(dirNm)
+        for file in files:
+            fileNm = os.path.join(dirNm, file)
+            if not os.path.isdir(fileNm):
+                try:
+                    protName, suid, time= self._readImFileProtNameSuid(fileNm)
+                    if self._fileType == 'NEMA':
+                        suid= suid[:-3]
+                except:
+                    continue  # skip non-dicom file
+                if suid not in self._filesForSuid:
+                    self._filesForSuid[suid]= [fileNm]
+                    self._suidNum += 1
+                    protName = str(self._suidNum) + ": " + protName
+                    self._suidAndTimeForProtocols[protName] = [suid, time]
+                else:
+                    self._filesForSuid[suid].append(fileNm)
+                # print protName, ": ", fileInfo, " ", suid
             else:
-                nf = dcm.NumberOfFrames
-                nz= dcm.PerFrameFunctionalGroupsSequence[nf-1].FrameContentSequence[0].DimensionIndexValues[2]
-                # could get the nt from the DimensionIndexValues[3] array for a 4D image, but for a 3D image this
-                # will not exist
-                nt= nf / nz
-            self._sequenceParameters[protName]= [dcm.Rows, dcm.Columns, nz, nt]
-        return self._sequenceParameters[protName]
+                self._gatherSeriesFileNamesRecursive(fileNm)
 
-    def getSeriesNames(self):
-        """ Return and ordered list of the series. """
-        return self._protNamesOrdered
-
-    def _getFileInfoAndData(self, file):
-        """ Get info about the file and the pixel data.
-
-            Assumes all the files are safe to read.
-        """
-        dcm= dicom.read_file(file, stop_before_pixels=False, force=True)
-        if not dcm.dir('SamplesPerPixel'):
-            #required for NEMA for the pixel_array access to work
-            dcm.SamplesPerPixel = 1
-        if 'SliceLocation' in dcm:
-            sliceLocation = dcm.SliceLocation
-        else:
-            sliceLocation = 0
-        imageData = dcm.pixel_array
-        fileInfo = [file, self._getImageTime(dcm), sliceLocation]
-        return fileInfo, imageData
-
-    def _getFileType(self, dcm):
-        """ Check whether the file is DICOM, multiframe DICOM or NEMA."""
-        if self._fileType is None:
-            if 'SOPClassUID' in dcm:
-                if 'Enhanced' in str(dcm.SOPClassUID):
-                    self._fileType= 'enhancedDICOM'
-                elif 'MR Image' in str(dcm.SOPClassUID):
-                    self._fileType= 'DICOM'
-            elif 'RecognitionCode' in dcm and dcm.RecognitionCode == 'ACR-NEMA 2.0':
-                self._fileType= 'NEMA'
-        return self._fileType
-
-    def _getImageTime(self, dcm):
-        """ Get the acquisition time of the file. """
-        if 'AcquisitionTime' in dcm:
-            # DICOM
-            acqTime = dcm.AcquisitionTime
-        elif 'AcquisitionDateTime' in dcm:
-            # DICOM enhanced
-            acqTime= dcm.AcquisitionDateTime
-        elif 'ContentTime' in dcm:
-            # NEMA
-            acqTime = dcm.ContentTime
-        else:
-            raise Exception
+    def _readImFileProtNameSuid(self, file):
+        """ Get the protocol information from the given file. """
+        if self._fileType == 'DICOM' or self._fileType is None:
+            try:
+                dcm = dicom.read_file(file, stop_before_pixels=False, force=False)
+                if self._fileType is None:
+                    if 'Enhanced' in str(dcm.SOPClassUID):
+                        self._fileType = 'enhancedDICOM'
+                    elif 'MR Image' in str(dcm.SOPClassUID):
+                        self._fileType = 'DICOM'
+            except Exception as why:
+                if self._fileType == 'DICOM':
+                    print file + " ", why
+                    raise Exception
+        if self._fileType == 'NEMA' or self._fileType is None:
+            try:
+                dcm = dicom.read_file(file, stop_before_pixels=False, force=True)
+                try:
+                    #need to do this check on all files opened, as the force=True
+                    #option will open all sorts of files
+                    if dcm.RecognitionCode == 'ACR-NEMA 2.0':
+                        if self._fileType is None:
+                            self._fileType= 'NEMA'
+                        #required for the pixel_array access to work
+                        if not dcm.dir('SamplesPerPixel'):
+                            dcm.SamplesPerPixel= 1
+                except Exception:
+                    raise Exception
+            except Exception as why:
+                    print file + " ", why
+                    raise Exception
         try:
-            x = datetime.strptime(acqTime,'%H:%M:%S.%f')
-            time = (x.hour * 60 + x.minute) * 60 + x.second + x.microsecond / 1000000.0
-        except ValueError:
-            time = float(acqTime)
-        return time
-
-    def _setSeriesInfoAndData(self, suid):
-        """ Fill the class data structures the hold the information and Data for the SUID. """
-        fileNames= self._filesForSuid[suid]
-        seriesFileInfo= []
-        # release data memory first
-        self._data = None
-        for i, file in enumerate(fileNames):
-            fileNm= os.path.join(self._dirNm, file)
-            fileInfo, fileData= self._getFileInfoAndData(fileNm)
-            seriesFileInfo.append(fileInfo)
-            if len(fileNames) > 1:
-                if i == 0:
-                    dcm= dicom.read_file(fileNm, stop_before_pixels=False, force=True)
-                    if not dcm.dir('SamplesPerPixel'):
-                        # required for pixel_array access
-                        dcm.SamplesPerPixel = 1
-                    seriesData = np.zeros([len(fileNames), dcm.Rows, dcm.Columns], dcm.pixel_array.dtype)
-                seriesData[i, :, :] = fileData
-            else:
-                seriesData= fileData
-        if len(fileNames) > 1:
-            infoSortedWithIndex = sorted(enumerate(seriesFileInfo), key=lambda info: (info[1][2], info[1][1]))
-            sortIndex = []
-            infoSorted = []
-            for info in infoSortedWithIndex:
-                sortIndex.append(info[0])
-                infoSorted.append(info[1])
-            self._fileInfoForSuid[suid] = infoSorted
-            self._data = seriesData[sortIndex, :, :]
-        else:
-            self._fileInfoForSuid[suid] = seriesFileInfo
-            self._data = seriesData
-        self._dataSuid = suid
+            protName = dcm.SeriesDescription
+        except Exception as why:
+            print file + " ", why
+            raise Exception
+        return protName.lstrip(), dcm.SeriesInstanceUID, self._getImageTime(dcm)
