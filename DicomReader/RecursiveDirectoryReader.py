@@ -3,7 +3,7 @@ __author__ = 'medabana'
 import dicom
 import os
 
-from PatientDirectoryReader import PatientDirectoryReader
+from DicomReader.PatientDirectoryReader import PatientDirectoryReader
 
 class RecursiveDirectoryReader(PatientDirectoryReader):
     """Responsible for reading image data when there is not a DICOMDIR file."""
@@ -12,7 +12,7 @@ class RecursiveDirectoryReader(PatientDirectoryReader):
         self._gatherSeriesFileNames(dirNm)
 
     def _gatherSeriesFileNames(self, dcmDir):
-        """ Get the series information, sort and enumerate the items. """
+        """ Get the series information, and generate a sorted list of names."""
         self._gatherSeriesFileNamesRecursive(dcmDir)
         seriesSorted = sorted(self._suidAndTimeForProtocols.items(), key=lambda info: info[1])
         for i, series in enumerate(seriesSorted):

@@ -2,7 +2,8 @@ __author__ = 'medabana'
 
 import os
 import dicom
-from PatientDirectoryReader import PatientDirectoryReader
+
+from DicomReader.PatientDirectoryReader import PatientDirectoryReader
 
 class DicomDirFileReader(PatientDirectoryReader):
     """Responsible for reading image directories where there is a DICOMDIR file."""

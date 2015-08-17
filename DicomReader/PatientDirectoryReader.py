@@ -17,7 +17,7 @@ class PatientDirectoryReader(object):
         self._suidAndTimeForProtocols = {}
         self._fileInfoForSuid = {}
         self._protNamesOrdered = []
-        self._sequenceParameters= {}
+        self._sequenceParameters = {}
         # only keep one set of data at a time for memory purposes
         self._data = None
         self._dataSuid = None
