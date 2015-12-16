@@ -53,7 +53,7 @@ class RecursiveDirectoryReader(PatientDirectoryReader):
                         self._fileType = 'DICOM'
             except Exception as why:
                 if self._fileType == 'DICOM':
-                    print file + " ", why
+                    # print file + " ", why
                     raise Exception
         if self._fileType == 'NEMA' or self._fileType is None:
             try:
@@ -70,12 +70,12 @@ class RecursiveDirectoryReader(PatientDirectoryReader):
                 except Exception:
                     raise Exception
             except Exception as why:
-                    print file + " ", why
+                    # print file + " ", why
                     raise Exception
         try:
             protName = dcm.SeriesDescription
         except Exception as why:
-            print file + " ", why
+            # print file + " ", why
             raise Exception
         return protName.lstrip(), dcm.SeriesInstanceUID, self._getImageTime(dcm)
 

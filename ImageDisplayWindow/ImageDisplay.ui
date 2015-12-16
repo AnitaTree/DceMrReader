@@ -315,7 +315,17 @@
     <property name="title">
      <string>Image</string>
     </property>
-    <addaction name="actionOpen"/>
+    <widget class="QMenu" name="menuOpen">
+     <property name="title">
+      <string>Open</string>
+     </property>
+     <addaction name="actionDICOM"/>
+     <addaction name="actionNpz"/>
+    </widget>
+    <addaction name="menuOpen"/>
+    <addaction name="actionShow_data"/>
+    <addaction name="actionSave"/>
+    <addaction name="actionSave_ROI"/>
    </widget>
    <widget class="QMenu" name="menuAnalysis">
     <property name="title">
@@ -323,26 +333,23 @@
     </property>
     <addaction name="actionMaximum_Intensity_Map"/>
     <addaction name="actionMean_baseline_image"/>
+    <addaction name="actionMaximum_intensity_timepoint_map"/>
+    <addaction name="actionAorta_seed_score_map"/>
+    <addaction name="actionZeros_map"/>
    </widget>
    <widget class="QMenu" name="menuROI">
     <property name="title">
      <string>AIF</string>
     </property>
     <addaction name="actionSelect_AIF_voxels"/>
+    <addaction name="actionAorta_mask_method_auto"/>
+    <addaction name="actionSelect_voxels_2"/>
    </widget>
    <addaction name="menuImage"/>
    <addaction name="menuAnalysis"/>
    <addaction name="menuROI"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
-  <action name="actionOpen">
-   <property name="enabled">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Open</string>
-   </property>
-  </action>
   <action name="actionMaximum_Intensity_Map">
    <property name="text">
     <string>Maximum Intensity Map</string>
@@ -365,7 +372,57 @@
   </action>
   <action name="actionSelect_AIF_voxels">
    <property name="text">
-    <string>Select AIF voxels</string>
+    <string>Aorta mask method user</string>
+   </property>
+  </action>
+  <action name="actionSave">
+   <property name="text">
+    <string>Save as npz</string>
+   </property>
+  </action>
+  <action name="actionDICOM">
+   <property name="text">
+    <string>DICOM</string>
+   </property>
+  </action>
+  <action name="actionNpz">
+   <property name="text">
+    <string>npz</string>
+   </property>
+  </action>
+  <action name="actionMaximum_intensity_timepoint_map">
+   <property name="text">
+    <string>Maximum intensity timepoint map</string>
+   </property>
+  </action>
+  <action name="actionAorta_seed_score_map">
+   <property name="text">
+    <string>Aorta seed score map</string>
+   </property>
+  </action>
+  <action name="actionSave_ROI">
+   <property name="text">
+    <string>Save ROI</string>
+   </property>
+  </action>
+  <action name="actionSelect_voxels_2">
+   <property name="text">
+    <string>Global automated method</string>
+   </property>
+  </action>
+  <action name="actionZeros_map">
+   <property name="text">
+    <string>Zeros map</string>
+   </property>
+  </action>
+  <action name="actionShow_data">
+   <property name="text">
+    <string>Show data</string>
+   </property>
+  </action>
+  <action name="actionAorta_mask_method_auto">
+   <property name="text">
+    <string>Aorta mask method auto</string>
    </property>
   </action>
  </widget>

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>391</width>
-    <height>151</height>
+    <height>199</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -25,7 +25,7 @@
      <x>10</x>
      <y>10</y>
      <width>371</width>
-     <height>133</height>
+     <height>181</height>
     </rect>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -46,7 +46,7 @@
          <x>0</x>
          <y>0</y>
          <width>367</width>
-         <height>69</height>
+         <height>85</height>
         </rect>
        </property>
        <layout class="QGridLayout" name="gridLayout">
@@ -79,12 +79,16 @@
          </widget>
         </item>
         <item>
-         <widget class="QLabel" name="label">
+         <widget class="QLabel" name="label_xKernel">
           <property name="text">
-           <string>Candidates</string>
+           <string>Kernel: x</string>
           </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_yKernel">
+          <property name="text">
+           <string>Kernel: y</string>
           </property>
          </widget>
         </item>
@@ -100,12 +104,25 @@
          </widget>
         </item>
         <item>
-         <widget class="QSpinBox" name="spinBox_thresh">
-          <property name="maximum">
-           <number>100</number>
+         <widget class="QSpinBox" name="spinBox_xKernel">
+          <property name="minimum">
+           <number>1</number>
+          </property>
+          <property name="singleStep">
+           <number>2</number>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QSpinBox" name="spinBox_yKernel">
+          <property name="minimum">
+           <number>1</number>
+          </property>
+          <property name="singleStep">
+           <number>2</number>
           </property>
           <property name="value">
-           <number>50</number>
+           <number>5</number>
           </property>
          </widget>
         </item>
@@ -124,12 +141,28 @@
          </widget>
         </item>
         <item>
-         <widget class="QSlider" name="slider_thresh">
-          <property name="maximum">
-           <number>100</number>
+         <widget class="QSlider" name="slider_xKernel">
+          <property name="minimum">
+           <number>1</number>
+          </property>
+          <property name="singleStep">
+           <number>2</number>
+          </property>
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QSlider" name="slider_yKernel">
+          <property name="minimum">
+           <number>1</number>
+          </property>
+          <property name="singleStep">
+           <number>2</number>
           </property>
           <property name="value">
-           <number>50</number>
+           <number>5</number>
           </property>
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -145,6 +178,9 @@
         </property>
         <property name="standardButtons">
          <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+        </property>
+        <property name="centerButtons">
+         <bool>true</bool>
         </property>
        </widget>
       </item>
@@ -204,38 +240,6 @@
    </hints>
   </connection>
   <connection>
-   <sender>slider_thresh</sender>
-   <signal>sliderMoved(int)</signal>
-   <receiver>spinBox_thresh</receiver>
-   <slot>setValue(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>197</x>
-     <y>60</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>87</x>
-     <y>61</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>spinBox_thresh</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>slider_thresh</receiver>
-   <slot>setValue(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>87</x>
-     <y>61</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>197</x>
-     <y>60</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>slider_slice</sender>
    <signal>sliderMoved(int)</signal>
    <receiver>spinBox_slice</receiver>
@@ -248,6 +252,70 @@
     <hint type="destinationlabel">
      <x>87</x>
      <y>28</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>slider_xKernel</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>spinBox_xKernel</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>210</x>
+     <y>149</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>95</x>
+     <y>151</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>spinBox_xKernel</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>slider_xKernel</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>95</x>
+     <y>151</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>210</x>
+     <y>149</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>slider_yKernel</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>spinBox_yKernel</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>210</x>
+     <y>174</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>95</x>
+     <y>177</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>spinBox_yKernel</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>slider_yKernel</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>95</x>
+     <y>177</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>210</x>
+     <y>174</y>
     </hint>
    </hints>
   </connection>

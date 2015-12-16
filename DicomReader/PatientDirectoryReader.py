@@ -135,6 +135,7 @@ class PatientDirectoryReader(object):
                         # required for pixel_array access (NEMA)
                         dcm.SamplesPerPixel = 1
                     seriesData = np.zeros([len(fileNames), dcm.Rows, dcm.Columns], dcm.pixel_array.dtype)
+                    print dcm.Rows, dcm.Columns
                 seriesData[i, :, :] = fileData
             else:
                 seriesData= fileData

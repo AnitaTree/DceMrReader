@@ -1,6 +1,7 @@
 __author__ = 'medabana'
 
 import os
+import numpy as np
 
 from PySide import QtCore, QtGui
 
@@ -31,16 +32,26 @@ class ControlMainWindow(QtGui.QMainWindow):
         self._ui.label.setGeometry(QtCore.QRect(0, 0, self._labelGeometry[0], self._labelGeometry[1]))
         self._ui.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0,0,self._labelGeometry[0],self._labelGeometry[1]))
 
+
         # Connect the image slice related buttons to functions.
         self._ui.spinSlice.valueChanged.connect(self._changeSlice)
         self._ui.spinTime.valueChanged.connect(self._changeTime)
-        self._ui.actionOpen.triggered.connect(self._displaySeriesNames)
+        self._ui.actionDICOM.triggered.connect(self._displaySeriesNames)
+        self._ui.actionNpz.triggered.connect(self._displayNpzFile)
+        self._ui.actionShow_data.triggered.connect(self._displayDynamics)
+        self._ui.actionSave.triggered.connect(self._saveSeries)
+        self._ui.actionSave_ROI.triggered.connect(self._saveROI)
         self._ui.label.pictureClicked.connect(self._showVoxelValue)
 
         # connect the analysis menu functions up
         self._ui.actionMaximum_Intensity_Map.triggered.connect(self._mapGuiSetup.calcAndSignalMaxIntMap)
+        self._ui.actionMaximum_intensity_timepoint_map.triggered.connect(self._mapGuiSetup.calcAndSignalMaxTimepointMap)
         self._ui.actionMean_baseline_image.triggered.connect(self._mapGuiSetup.calcAndSignalMeanBaselineMap)
-        self._ui.actionSelect_AIF_voxels.triggered.connect(self._selectAIFvoxels)
+        self._ui.actionAorta_seed_score_map.triggered.connect(self._mapGuiSetup.displayScoreMap)
+        self._ui.actionZeros_map.triggered.connect(self._mapGuiSetup.generateZerosMap)
+        self._ui.actionSelect_AIF_voxels.triggered.connect(self._selectAIFvoxelsFromMaskUser)
+        self._ui.actionSelect_voxels_2.triggered.connect(self._selectAIFvoxelsGlobal)
+        self._ui.actionAorta_mask_method_auto.triggered.connect(self._selectAIFvoxelsFromMaskAuto)
 
         #connect signals from the analysis up
         self._mapGuiSetup.timeChanged.connect(self._changeTime)
@@ -55,7 +66,11 @@ class ControlMainWindow(QtGui.QMainWindow):
         self._ui.roiButton.pressed.connect(self._roiPressed)
         self._ui.roiFreehand.pressed.connect(self._freehandPressed)
 
-        self._displaySeriesNames()
+        # self._displaySeriesNames()
+
+    def closeEvent(self, *args, **kwargs):
+        """ Closes any open windows. """
+        QtGui.qApp.quit()
 
     def keyPressEvent(self, e):
         """ Move around the series images using the H, J, F, and G keys. """
@@ -98,29 +113,65 @@ class ControlMainWindow(QtGui.QMainWindow):
             self._mapGuiSetup.setDisplayTimepoint(num)
             self._setSlice()
 
-    def _displayLatestMap(self):
+    def _displayLatestMap(self, nt):
         """ Display the latest map produced by the analysis module. """
         self._ui.label.setData(self._mapGuiSetup.getLatestMap())
-        self._nt = 1
+        self._nt = nt
         self._currTime = 1
         self._setGuiInfo(self._mapGuiSetup.getLatestMapName())
 
-    def _displayLatestMask(self):
+    def _displayLatestMask(self, z):
         """ Display the latest mask produced by the analysis module. """
         self._ui.label.setROI(self._aifGuiSetup.getLatestMask())
+        self._changeGuiSlice(z)
+
+    def _displayNpzFile(self):
+        """ Load in data from a *.npz file and display it. """
+        file = QtGui.QFileDialog.getOpenFileName(None, 'Select npz file', 'D:\\ISMRMdataAIF', "npz files (*.npz)")
+        if file[0] == '':
+            return
+        fileName = file[0]
+        npzData = np.load(fileName)
+        if 'data' not in npzData or 'dims' not in npzData:
+            message = "The npz file should contain the image array named \'data\' \n" \
+                      "and an array [nt, nz, ny, nx] named \'dims\'"
+            QtGui.QMessageBox.critical(self, "Critical", message)
+            return
+        data = npzData['data']
+        self._ui.label.setData(data)
+        self._nt, self._nz, self._ny, self._nx = npzData['dims']
+        self._mapGuiSetup.reset()
+        self._aifGuiSetup.reset()
+        self._mapGuiSetup.setDynamics(data, self._nt)
+        self._files = [fileName]
+        seriesName = os.path.splitext(os.path.basename(fileName))[0]
+        seriesName = seriesName.replace('_', ': ', 1).replace("_", " ")
+        self._setGuiInfo(seriesName)
+        self._dcmDir = os.path.dirname(fileName)
+
+    def _displayDynamics(self):
+        """ Display previously loaded dynamics. """
+        data = self._mapGuiSetup.getDynamics()
+        self._ui.label.setData(data)
+        nzt, self._ny, self._nx = data.shape
+        self._nz = self._mapGuiSetup.getNz()
+        self._nt = nzt/self._nz
+        self._setGuiInfo('Dynamics')
 
     def _displaySeries(self, index):
         """ Gets the data for the selected series and displays an initial image. """
         # Get the selected protocol name
         item = self.model.itemFromIndex(index)
         print "double clicked", item.text()
-        seriesName= item.text()
+        seriesName = item.text()
 
         # get the image data and info
-        data= self._seriesReader.getImageData(seriesName)
+        data = self._seriesReader.getImageData(seriesName)
         self._ui.label.setData(data)
-        self._files= self._seriesReader.getOrderedFileList(seriesName)
+        self._files = self._seriesReader.getOrderedFileList(seriesName)
         self._nx, self._ny, self._nz, self._nt = self._seriesReader.getSequenceParameters(seriesName)
+        self._mapGuiSetup.reset()
+        self._aifGuiSetup.reset()
         self._mapGuiSetup.setDynamics(data, self._nt)
         print self._seriesReader.getSequenceParameters(seriesName)
         self._setGuiInfo(seriesName)
@@ -128,11 +179,13 @@ class ControlMainWindow(QtGui.QMainWindow):
     def _displaySeriesNames(self):
         """ Request the DICOM directory from the user and displays the found protocols. """
         # Ask for the DICOM directory.
-        # self.dcmDir = QtGui.QFileDialog.getExistingDirectory(None, 'Select DICOM directory', 'D:\\renalDatabase_anon')
-        # if self.dcmDir == '':
-        #     return
+        self._dcmDir = QtGui.QFileDialog.getExistingDirectory(None, 'Select DICOM directory', 'D:\\renalDatabase_anon')
+        if self._dcmDir == '':
+            return
+        print self._dcmDir
 
-        self.dcmDir = 'D:\\renalDatabase_anon\\NKRF\\AW27'
+        # self._dcmDir = 'D:\\renalDatabase_anon\\NKRF\\AW27'
+        # self._dcmDir = 'D:\\renalDatabase_anon\\1Tdata\\AR1'
 
         # Get the appropriate type of directory reader for the data.
         # And from the reader get the protocol names.
@@ -150,7 +203,7 @@ class ControlMainWindow(QtGui.QMainWindow):
             self.model.appendRow(item)
         seriesSelect.listView.setModel(self.model)
         seriesSelect.listView.doubleClicked[QtCore.QModelIndex].connect(self._displaySeries)
-        seriesSelect.label_dcmDir.setText(self.dcmDir)
+        seriesSelect.label_dcmDir.setText(self._dcmDir)
         self.scrArea.show()
         self.scrArea.activateWindow()
         self.scrArea.raise_()
@@ -163,7 +216,7 @@ class ControlMainWindow(QtGui.QMainWindow):
 
     def _getDirectoryReader(self):
         """ Return the correct directory reader depending on whether there is a DICOMDIR file. """
-        dirName= self.dcmDir
+        dirName= self._dcmDir
         dirNameSearch= dirName
         if os.path.basename(dirName) == 'DICOM':
             dirNameSearch= os.path.dirname(dirName)
@@ -180,22 +233,139 @@ class ControlMainWindow(QtGui.QMainWindow):
         self._ui.label.setROImode(not self._ui.roiButton.isChecked())
         self._ui.label.setFreehandMode(self._ui.roiFreehand.isChecked())
 
-    def _selectAIFvoxels(self):
+    def _saveSeries(self):
+        """ Save the Series currently displayed as a npz file. """
+        data = self._ui.label.getData()
+        name = self._ui.seriesLabel.text()
+        name = name.replace(' ', '_').replace(":", "").replace("/", "_").replace("\\", "_")
+        print name, data.shape
+        outputDir = QtGui.QFileDialog.getExistingDirectory(None, 'Select output directory', self._dcmDir)
+        if outputDir == '':
+            return
+
+        outFile = os.path.join(outputDir, name + '.npz')
+        if os.path.exists(outFile):
+            flags = QtGui.QMessageBox.StandardButton.Yes
+            flags |= QtGui.QMessageBox.StandardButton.No
+            question = "File \'" + outFile + "\' already exists. Would you like to overwrite?"
+            response = QtGui.QMessageBox.warning(self, "Warning", question, flags)
+            if response != QtGui.QMessageBox.Yes:
+                return
+
+        np.savez_compressed(outFile, data=data, dims=[self._nt, self._nz, self._ny, self._nx])
+        self._dcmDir = os.path.dirname(outFile)
+
+    def _saveROI(self, check = True, name=None):
+        """ Save the ROI in a form that makes sense to PMI.
+        :return:
+        """
+        if name == None:
+            fileOut = QtGui.QFileDialog.getSaveFileName(None, 'Select output filename', self._dcmDir)
+            if fileOut == '':
+                return
+            fileBase = os.path.splitext(fileOut[0])[0]
+        else:
+            roiDir = os.path.join(self._dcmDir, 'ROIs2')
+            if not os.path.exists(roiDir):
+                os.makedirs(roiDir)
+            fileBase = os.path.join(roiDir, name)
+            # fileBase = os.path.join(self._dcmDir, name)
+
+        outFile = fileBase + '(000,000).raw'
+        if check and os.path.exists(outFile):
+            flags = QtGui.QMessageBox.StandardButton.Yes
+            flags |= QtGui.QMessageBox.StandardButton.No
+            question = "File \'" + outFile + "\' already exists. Would you like to overwrite?"
+            response = QtGui.QMessageBox.warning(self, "Warning", question, flags)
+            if response != QtGui.QMessageBox.Yes:
+                return
+
+        roi = self._ui.label.getROI()
+
+        fnum = range(0, roi.shape[0])
+        for i in fnum:
+            slice = roi[i, :, :]
+            slice = np.flipud(slice)
+            j = roi.shape[0] - i - 1
+            fname = fileBase + 'Rev(' + str(j).zfill(3) + ',000)' + '.raw'
+            slice.astype('int8').tofile(fname)
+
+    def _selectAIFvoxelsFromMaskAuto(self):
+        """ Run algorithm that selects AIF voxels by generating an aorta mask,
+        including requests for information from the user. """
+
+        fraction = [0.5, 0.75, 0.9, 0.95]
+        numVoxels = [50, 20, 10, 5]
+
         accept = self._mapGuiSetup.calcMaxIntMap()
-        if accept:
-            self._displayLatestMap()
-            self._mapGuiSetup.calcMeanBaseline()
-        findSeed = True
-        accept = True
-        while findSeed:
-            findSeed = False
-            accept = self._aifGuiSetup.findCandidateAortaSeeds(self._currSlice)
-            if accept:
-                accept, findSeed = self._aifGuiSetup.acceptAortaSeed()
+        if not accept:
+            return
+        self._displayLatestMap(1)
+        self._mapGuiSetup.calcMeanBaseline()
+        self._aifGuiSetup.findCandidateAortaSeedAuto()
+        self._aifGuiSetup.floodfillFromSeed(self._currSlice)
+
+        for i in range(0, len(fraction)):
+            self._aifGuiSetup.findAIFvoxelsAuto(False, fraction[i])
+            self._saveROI(False, 'aifFraction' + `fraction[i]`)
+            aif, aifMeasures = self._aifGuiSetup.getAIFdata()
+            aif = np.insert(aif, 0, fraction[i])
+            aifMeasures = np.insert(aifMeasures, 0, fraction[i])
+            if i == 0:
+                aifs = aif.reshape([len(aif), 1])
+                aifData = aifMeasures.reshape([1, len(aifMeasures)])
+            else:
+                aifs = np.append(aifs, aif.reshape([len(aif), 1]), 1)
+                aifData = np.append(aifData, aifMeasures.reshape([1, len(aifMeasures)]), 0)
+
+        fileName = os.path.join(self._dcmDir, 'AIFcurves2.txt')
+        np.savetxt(fileName, aifs)
+        fileName = os.path.join(self._dcmDir, 'AIFmeasures2.txt')
+        np.savetxt(fileName, aifData)
+
+        for i in range(0, len(numVoxels)):
+            self._aifGuiSetup.findAIFvoxelsMinNumber(False, numVoxels[i])
+            self._saveROI(False, 'aifNumber' + `numVoxels[i]`)
+            aif, aifMeasures = self._aifGuiSetup.getAIFdata()
+            aif = np.insert(aif, 0, numVoxels[i])
+            aifMeasures = np.insert(aifMeasures, 0, numVoxels[i])
+            if i == 0:
+                aifs = aif.reshape([len(aif), 1])
+                aifData = aifMeasures.reshape([1, len(aifMeasures)])
+            else:
+                aifs = np.append(aifs, aif.reshape([len(aif), 1]), 1)
+                aifData = np.append(aifData, aifMeasures.reshape([1, len(aifMeasures)]), 0)
+
+        fileName = os.path.join(self._dcmDir, 'AIFcurvesNum2.txt')
+        np.savetxt(fileName, aifs)
+        fileName = os.path.join(self._dcmDir, 'AIFmeasuresNum2.txt')
+        np.savetxt(fileName, aifData)
+
+
+    def _selectAIFvoxelsFromMaskUser(self):
+        """ Run algorithm that selects AIF voxels by generating an aorta mask,
+        including requests for information from the user. """
+        accept = self._mapGuiSetup.calcMaxIntMap()
+        if not accept:
+            return
+        self._displayLatestMap(1)
+        self._mapGuiSetup.calcMeanBaseline()
+        accept = self._aifGuiSetup.findCandidateAortaSeeds(self._currSlice)
         if accept:
             accept = self._aifGuiSetup.floodfillFromSeed(self._currSlice)
         if accept:
-            self._aifGuiSetup.findAIFvoxels(self._currSlice)
+            self._aifGuiSetup.findAIFvoxelsUser(self._currSlice)
+            # self._aifGuiSetup.findAIFvoxelsMinNumber(False)
+
+    def _selectAIFvoxelsGlobal(self):
+        """ Run algorithm that selects AIF voxels from the full image volume. No user input required. """
+        accept = self._mapGuiSetup.calcMaxIntMap()
+        if not accept:
+            return
+        self._displayLatestMap(1)
+        self._mapGuiSetup.calcMeanBaseline()
+        # self._aifGuiSetup.findAIFvoxelsMinNumber(True)
+        self._aifGuiSetup.findAIFvoxelsAuto(True, 0.90)
 
     def _setGuiInfo(self, seriesName):
         """ Set up the GUI and display the series. """

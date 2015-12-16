@@ -33,6 +33,14 @@ class ImageSliceDisplayLabel(QtGui.QLabel):
         self._setImageSlice()
         self._displayImageSlice()
 
+    def getData(self):
+        """ Return the currently displayed data
+
+        :return: np.array
+        3D array [nt x nz, ny, nx]
+        """
+        return self._data
+
     def getROI(self):
         """ Return the current ROI """
         return self._roi
@@ -48,6 +56,7 @@ class ImageSliceDisplayLabel(QtGui.QLabel):
         """ Set the data for the image and a new clear ROI. """
         self._data = imData
         self._dims = imData.shape
+        print self._dims
         self._maxVal = np.amax(imData)
         if self._maxVal == 0:
             self._maxVal = 1
@@ -173,11 +182,16 @@ class ImageSliceDisplayLabel(QtGui.QLabel):
         sliceData = self._data[self._currSlice, :, :]
         sliceC = np.require((sliceData*255.0)/self._maxVal, np.uint32, 'C')
         sliceRGB = np.zeros((self._dims[1], self._dims[2], 3), dtype=np.uint32)
-        sliceRGB[:, :, 1] = sliceC
-        sliceRGB[:, :, 2] = sliceC
+        sliceR = sliceC.copy()
+        sliceG = sliceC.copy()
+        sliceB = sliceC.copy()
         # Set any True ROI voxels to red
-        sliceC[self._roi[self._currSlice, :, :]] = 255.0
-        sliceRGB[:, :, 0] = sliceC
+        sliceR[self._roi[self._currSlice, :, :]] = 255.0
+        sliceG[self._roi[self._currSlice, :, :]] = 0.0
+        sliceB[self._roi[self._currSlice, :, :]] = 0.0
+        sliceRGB[:, :, 0] = sliceR
+        sliceRGB[:, :, 1] = sliceG
+        sliceRGB[:, :, 2] = sliceB
         self._displaySlice = (255 << 24 | sliceRGB[:,:,0] << 16 | sliceRGB[:,:,1] << 8 | sliceRGB[:,:,2])
         self._qIm = QtGui.QImage(self._displaySlice, self._dims[1], self._dims[2], QtGui.QImage.Format_RGB32)
 
