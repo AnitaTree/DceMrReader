@@ -9,7 +9,6 @@ class MapGenerator():
 
     def baselineMap(self):
         """ Generates an map of average baseline (pre-contrast) intensity.
-
         :return: np.array
         The baseline map.
         """
@@ -29,22 +28,43 @@ class MapGenerator():
         self._baselineMap = map
         return map
 
+    def getDynamics(self):
+        """ Return the dynamic series.
+        :return: np.array double
+        Dynamic Series.
+        """
+        return self._dynamics
+
     def getNumBaseline(self):
+        """ Return the input number of pre-contrast images.
+        :return: int
+        Number of pre-contrast images.
+        """
         return self._numBaseline
 
     def getNz(self):
         """ Returns the number of slices.
-
         :return: int
         """
         return self._dims[0]
 
-    def getDynamics(self):
-        return self._dynamics
+    def getScoreMap(self):
+        return self._scoreMap
+
+    def getZeroMinIntensityMap(self):
+        """ Return the mask of voxels who have a zero minimum signal intensity.
+        :return: np.array bool
+        Mask.
+        """
+        if self._zeroMinIntensityMap == None:
+            self.minimumIntensityMap()
+            nz, ny, nx = self._dims
+            self._zeroMinIntensityMap = np.zeros([nz, nx, ny])
+            self._zeroMinIntensityMap[self._minIntMap == 0.0] = 1
+        return self._zeroMinIntensityMap
 
     def isNumBaselineSet(self):
         """ Checks whether the number of baseline timepoints (pre-contrast) is known.
-
         :return: bool
         True if known, False otherwise
         """
@@ -52,7 +72,6 @@ class MapGenerator():
 
     def maximumIntensityMap(self):
         """ Generate a map of the maximum intensity if required and return the map.
-
         :return: np.array
         The maximum intensity map
         """
@@ -64,8 +83,7 @@ class MapGenerator():
 
     def minimumIntensityMap(self):
         """ Generate the minimum intensity maps from the time series.
-
-        :return:
+        :return: np.array double
         """
         if self._dynamics is None:
             print "No data"
@@ -81,7 +99,6 @@ class MapGenerator():
 
     def reset(self):
         """ Reset the state of the object.
-
         :return:
         """
         self._dynamics = None
@@ -93,14 +110,10 @@ class MapGenerator():
         self._numBaseline = None
         self._scoreMap = None
         self._minIntMap = None
-        self._zerosMap = None
-
-    def scoreMap(self):
-        return self._scoreMap
+        self._zeroMinIntensityMap = None
 
     def setDynamics(self, dyn, nt):
         """ Sets the dynamic images.
-
         :param dyn: np.array
         3D data array
         :param nt: int
@@ -114,7 +127,6 @@ class MapGenerator():
 
     def setNumBaseline(self, base):
         """ Sets the number of baseline images.
-
         :param base: int
         The number od pre-contrast images
         :return:
@@ -126,7 +138,6 @@ class MapGenerator():
 
     def timeToPeakMap(self):
         """ Generate the time to peak map, if required and return the map.
-
         :return: np.array
         The time tp peak map
         """
@@ -137,8 +148,7 @@ class MapGenerator():
         return self._timeToPeakMap
 
     def _generateMaxMaps(self):
-        """ Generate the time to peak and maximum intensity maps from the time series
-
+        """ Generate the time to peak and maximum intensity maps from the time series.
         :return:
         """
         if self._dynamics is None:
@@ -153,23 +163,7 @@ class MapGenerator():
             baseMap = np.mean(self._dynamics[startIndex:(startIndex+self._numBaseline), :, :], axis=0)
             baseMapAllTime = np.tile(baseMap, (self._nt-self._numBaseline, 1, 1))
             slice = self._dynamics[startIndex+self._numBaseline:(startIndex+self._nt), :, :] - baseMapAllTime
-            # slicePre = self._dynamics[startIndex:startIndex+self._numBaseline, :, :] - np.tile(baseMap, (self._numBaseline, 1, 1))
             slice = slice.clip(min=0) #remove negative values after subtraction
-            # slicePre = slicePre.clip(min=0) #remove negative values after subtraction
             self._maxIntMap[i, :, :] = np.amax(slice, axis=0)
             ttp = np.argmax(slice, axis=0)
-            # ttp[np.amax(slicePre, axis=0) > np.amax(slice, axis=0)*0.33] = self._nt
             self._timeToPeakMap[i, :, :] = ttp
-            # print np.count_nonzero(ttp == self._nt)
-        # maxInt = np.amax(self._maxIntMap)
-        # self.minimumIntensityMap()
-        # self._maxIntMap[self._minIntMap == 0.0] = 0
-        # self._maxIntMap[np.logical_and(self._minIntMap == 0.0, self._maxIntMap > maxInt*0.75)] = 0
-
-    def getZerosMap(self):
-        if self._zerosMap == None:
-            self.minimumIntensityMap()
-            nz, ny, nx = self._dims
-            self._zerosMap = np.zeros([nz, nx, ny])
-            self._zerosMap[self._minIntMap == 0.0] = 1
-        return self._zerosMap

@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'ImageDisplay.ui'
 #
-# Created: Tue Oct 20 17:13:30 2015
+# Created: Tue Jan 05 14:03:52 2016
 #      by: pyside-uic 0.2.15 running on PySide 1.2.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -222,8 +222,8 @@ class Ui_MainWindow(object):
         self.menuAnalysis.addAction(self.actionMaximum_Intensity_Map)
         self.menuAnalysis.addAction(self.actionMean_baseline_image)
         self.menuAnalysis.addAction(self.actionMaximum_intensity_timepoint_map)
-        self.menuAnalysis.addAction(self.actionAorta_seed_score_map)
         self.menuAnalysis.addAction(self.actionZeros_map)
+        self.menuAnalysis.addAction(self.actionAorta_seed_score_map)
         self.menuROI.addAction(self.actionSelect_AIF_voxels)
         self.menuROI.addAction(self.actionAorta_mask_method_auto)
         self.menuROI.addAction(self.actionSelect_voxels_2)
@@ -253,19 +253,19 @@ class Ui_MainWindow(object):
         self.menuOpen.setTitle(QtGui.QApplication.translate("MainWindow", "Open", None, QtGui.QApplication.UnicodeUTF8))
         self.menuAnalysis.setTitle(QtGui.QApplication.translate("MainWindow", "Analysis", None, QtGui.QApplication.UnicodeUTF8))
         self.menuROI.setTitle(QtGui.QApplication.translate("MainWindow", "AIF", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionMaximum_Intensity_Map.setText(QtGui.QApplication.translate("MainWindow", "Maximum Intensity Map", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionMean_baseline_image.setText(QtGui.QApplication.translate("MainWindow", "Mean baseline image", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionMaximum_Intensity_Map.setText(QtGui.QApplication.translate("MainWindow", "Maximum intensity map", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionMean_baseline_image.setText(QtGui.QApplication.translate("MainWindow", "Mean baseline map", None, QtGui.QApplication.UnicodeUTF8))
         self.actionAorta_Seed_Voxel.setText(QtGui.QApplication.translate("MainWindow", "Aorta Seed Voxel", None, QtGui.QApplication.UnicodeUTF8))
         self.actionFloodfill_from_seed.setText(QtGui.QApplication.translate("MainWindow", "Floodfill from seed", None, QtGui.QApplication.UnicodeUTF8))
         self.actionSelect_AIF_voxels.setText(QtGui.QApplication.translate("MainWindow", "Aorta mask method user", None, QtGui.QApplication.UnicodeUTF8))
         self.actionSave.setText(QtGui.QApplication.translate("MainWindow", "Save as npz", None, QtGui.QApplication.UnicodeUTF8))
         self.actionDICOM.setText(QtGui.QApplication.translate("MainWindow", "DICOM", None, QtGui.QApplication.UnicodeUTF8))
         self.actionNpz.setText(QtGui.QApplication.translate("MainWindow", "npz", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionMaximum_intensity_timepoint_map.setText(QtGui.QApplication.translate("MainWindow", "Maximum intensity timepoint map", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionMaximum_intensity_timepoint_map.setText(QtGui.QApplication.translate("MainWindow", "Time to peak map", None, QtGui.QApplication.UnicodeUTF8))
         self.actionAorta_seed_score_map.setText(QtGui.QApplication.translate("MainWindow", "Aorta seed score map", None, QtGui.QApplication.UnicodeUTF8))
         self.actionSave_ROI.setText(QtGui.QApplication.translate("MainWindow", "Save ROI", None, QtGui.QApplication.UnicodeUTF8))
         self.actionSelect_voxels_2.setText(QtGui.QApplication.translate("MainWindow", "Global automated method", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionZeros_map.setText(QtGui.QApplication.translate("MainWindow", "Zeros map", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionZeros_map.setText(QtGui.QApplication.translate("MainWindow", "Zero minimum intensity map", None, QtGui.QApplication.UnicodeUTF8))
         self.actionShow_data.setText(QtGui.QApplication.translate("MainWindow", "Show data", None, QtGui.QApplication.UnicodeUTF8))
         self.actionAorta_mask_method_auto.setText(QtGui.QApplication.translate("MainWindow", "Aorta mask method auto", None, QtGui.QApplication.UnicodeUTF8))
 

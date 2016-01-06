@@ -14,33 +14,16 @@ class MapGuiSetup(QtCore.QObject):
 
     def __init__(self, parent=None):
         super(MapGuiSetup, self).__init__(parent)
-        self._nt = 0
-        self._currTime = 0
-        self._input = None
-        self._baselineNumInput = None
         self._mapGenerator = MapGenerator()
-        self._latestMap = None
-        self._latestMapName = None
-
-    def generateZerosMap(self):
-        if not self._mapGenerator.isNumBaselineSet():
-            self._requestBaseline()
-            accept = self._input.exec_()
-
-            if accept == QtGui.QDialog.Accepted:
-                self._mapGenerator.setNumBaseline(self._baselineNumInput.spinBox.value())
-            else:
-                return False
-
-        self._latestMap = self._mapGenerator.getZerosMap()
-        self._latestMapName = 'Map of zeros'
-        self.mapReady.emit(1)
+        self.reset()
 
     def getDynamics(self):
-        return self._mapGenerator.getDynamics()
+        """ Return the dynamic series.
 
-    def getNz(self):
-        return self._mapGenerator.getNz()
+        :return: np.bool double
+        Dynamic series.
+        """
+        return self._mapGenerator.getDynamics()
 
     def getLatestMap(self):
         """ Return the last map generated.
@@ -64,8 +47,8 @@ class MapGuiSetup(QtCore.QObject):
         """
         return self._mapGenerator
 
-    def calcMaxIntMap(self):
-        """ Calculate the maximum intensity map.
+    def getMaxIntMap(self, giveSignal = True):
+        """ Calculate the maximum intensity map and signal if requested.
 
         Request the number of pre-contrast baseline images if not already known.
         :return: bool
@@ -82,30 +65,14 @@ class MapGuiSetup(QtCore.QObject):
 
         self._latestMap = self._mapGenerator.maximumIntensityMap()
         self._latestMapName = 'Maximum Intensity Map'
+
+        if giveSignal:
+            self.mapReady.emit(1)
+
         return True
 
-    def calcMaxTimepointMap(self):
-        """ Calculate the maximum intensity timepoint map.
-
-        Request the number of pre-contrast baseline images if not already known.
-        :return: bool
-        True if the user wishes to continue, False otherwise.
-        """
-        if not self._mapGenerator.isNumBaselineSet():
-            self._requestBaseline()
-            accept = self._input.exec_()
-
-            if accept == QtGui.QDialog.Accepted:
-                self._mapGenerator.setNumBaseline(self._baselineNumInput.spinBox.value())
-            else:
-                return False
-
-        self._latestMap = self._mapGenerator.timeToPeakMap()
-        self._latestMapName = 'Maximum Intensity Timepoint Map'
-        return True
-
-    def calcMeanBaseline(self):
-        """ Calculate the mean of the pre-contrast baseline images
+    def getMeanBaselineMap(self, giveSignal = True):
+        """ Calculate the mean of the pre-contrast baseline images and signal if requested.
 
         Request the number of pre-contrast baseline images if not already known.
         :return: bool
@@ -122,40 +89,73 @@ class MapGuiSetup(QtCore.QObject):
 
         self._latestMap = self._mapGenerator.baselineMap()
         self._latestMapName = 'Mean Baseline Map'
+
+        if giveSignal:
+            self.mapReady.emit(1)
+
         return True
 
-    def calcAndSignalMaxIntMap(self):
-        """ Calculate the maximum intensity map and signals when it is ready.
+    def getNz(self):
+        """ Return the number of slices.
 
-        :return:
+        :return: int
+        Number of slices.
         """
-        isMap = self.calcMaxIntMap()
+        return self._mapGenerator.getNz()
 
-        if isMap:
+    def getTTPMap(self, giveSignal = True):
+        """ Calculate the maximum intensity timepoint map and signal if requested.
+
+        Request the number of pre-contrast baseline images if not already known.
+        :return: bool
+        True if the user wishes to continue, False otherwise.
+        """
+        if not self._mapGenerator.isNumBaselineSet():
+            self._requestBaseline()
+            accept = self._input.exec_()
+
+            if accept == QtGui.QDialog.Accepted:
+                self._mapGenerator.setNumBaseline(self._baselineNumInput.spinBox.value())
+            else:
+                return False
+
+        self._latestMap = self._mapGenerator.timeToPeakMap()
+        self._latestMapName = 'Maximum Intensity Timepoint Map'
+
+        if giveSignal:
             self.mapReady.emit(1)
 
-    def calcAndSignalMaxTimepointMap(self):
-        """ Calculate the maximum intensity timepoint map and signals when it is ready.
+        return True
 
-        :return:
+    def getZeroMinIntensityMap(self, giveSignal = True):
+        """ Calculate a mask of voxels who have zero minimum signal intensity in their time series and signal if requested.
+
+        :return: np.array bool
+        Mask.
         """
-        isMap = self.calcMaxTimepointMap()
+        if not self._mapGenerator.isNumBaselineSet():
+            self._requestBaseline()
+            accept = self._input.exec_()
 
-        if isMap:
+            if accept == QtGui.QDialog.Accepted:
+                self._mapGenerator.setNumBaseline(self._baselineNumInput.spinBox.value())
+            else:
+                return False
+
+        self._latestMap = self._mapGenerator.getZeroMinIntensityMap()
+        self._latestMapName = 'Map of zeros'
+
+        if giveSignal:
             self.mapReady.emit(1)
 
-    def calcAndSignalMeanBaselineMap(self):
-        """ Calculate the baseline map and signals when it is ready.
-
-        :return:
-        """
-        isMap = self.calcMeanBaseline()
-
-        if isMap:
-            self.mapReady.emit(1)
+        return True
 
     def displayScoreMap(self):
-        self._latestMap = self._mapGenerator.scoreMap()
+        """ Display the score map generated to find the aorta seed and emit a signal.
+
+        :return:
+        """
+        self._latestMap = self._mapGenerator.getScoreMap()
         self._latestMapName = 'Aorta seed score maps'
         self.mapReady.emit(1)
 

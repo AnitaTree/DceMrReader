@@ -7,6 +7,7 @@ from PySide import QtCore, QtGui
 
 from Analysis.MapGuiSetup import MapGuiSetup
 from Analysis.AIFguiSetup import AIFguiSetup
+from Analysis.AIFmethods import AIFmethods
 from DicomReader.DicomDirFileReader import DicomDirFileReader
 from DicomReader.RecursiveDirectoryReader import RecursiveDirectoryReader
 from DicomReader.SeriesSelection import Ui_SeriesSelection
@@ -23,6 +24,7 @@ class ControlMainWindow(QtGui.QMainWindow):
         self._labelGeometry = [450, 450]
         self._mapGuiSetup = MapGuiSetup()
         self._aifGuiSetup = AIFguiSetup(self._mapGuiSetup.getMapGenerator())
+        self._aifMethods = AIFmethods(self._aifGuiSetup, self._mapGuiSetup)
 
         # Create the main window.
         self._ui = ImageDisplay.Ui_MainWindow()
@@ -31,7 +33,6 @@ class ControlMainWindow(QtGui.QMainWindow):
         self._ui.spinTime.setValue(1)
         self._ui.label.setGeometry(QtCore.QRect(0, 0, self._labelGeometry[0], self._labelGeometry[1]))
         self._ui.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0,0,self._labelGeometry[0],self._labelGeometry[1]))
-
 
         # Connect the image slice related buttons to functions.
         self._ui.spinSlice.valueChanged.connect(self._changeSlice)
@@ -44,11 +45,11 @@ class ControlMainWindow(QtGui.QMainWindow):
         self._ui.label.pictureClicked.connect(self._showVoxelValue)
 
         # connect the analysis menu functions up
-        self._ui.actionMaximum_Intensity_Map.triggered.connect(self._mapGuiSetup.calcAndSignalMaxIntMap)
-        self._ui.actionMaximum_intensity_timepoint_map.triggered.connect(self._mapGuiSetup.calcAndSignalMaxTimepointMap)
-        self._ui.actionMean_baseline_image.triggered.connect(self._mapGuiSetup.calcAndSignalMeanBaselineMap)
+        self._ui.actionMaximum_Intensity_Map.triggered.connect(self._mapGuiSetup.getMaxIntMap)
+        self._ui.actionMaximum_intensity_timepoint_map.triggered.connect(self._mapGuiSetup.getTTPMap)
+        self._ui.actionMean_baseline_image.triggered.connect(self._mapGuiSetup.getMeanBaselineMap)
         self._ui.actionAorta_seed_score_map.triggered.connect(self._mapGuiSetup.displayScoreMap)
-        self._ui.actionZeros_map.triggered.connect(self._mapGuiSetup.generateZerosMap)
+        self._ui.actionZeros_map.triggered.connect(self._mapGuiSetup.getZeroMinIntensityMap)
         self._ui.actionSelect_AIF_voxels.triggered.connect(self._selectAIFvoxelsFromMaskUser)
         self._ui.actionSelect_voxels_2.triggered.connect(self._selectAIFvoxelsGlobal)
         self._ui.actionAorta_mask_method_auto.triggered.connect(self._selectAIFvoxelsFromMaskAuto)
@@ -58,7 +59,7 @@ class ControlMainWindow(QtGui.QMainWindow):
         self._mapGuiSetup.timeChanged.connect(self._ui.spinTime.setValue)
         self._mapGuiSetup.mapReady.connect(self._displayLatestMap)
         self._aifGuiSetup.maskReady.connect(self._displayLatestMask)
-        self._aifGuiSetup.sliceChanged.connect(self._changeGuiSlice)
+        self._aifGuiSetup.sliceChanged.connect(self._updateGuiSliceNum)
 
         # Connect the roi buttons to functions.
         self._ui.roiClear.pressed.connect(self._ui.label.clearROI)
@@ -66,7 +67,7 @@ class ControlMainWindow(QtGui.QMainWindow):
         self._ui.roiButton.pressed.connect(self._roiPressed)
         self._ui.roiFreehand.pressed.connect(self._freehandPressed)
 
-        # self._displaySeriesNames()
+        self._displayNpzFile()
 
     def closeEvent(self, *args, **kwargs):
         """ Closes any open windows. """
@@ -102,7 +103,12 @@ class ControlMainWindow(QtGui.QMainWindow):
             self._currSlice = num
             self._setSlice()
 
-    def _changeGuiSlice(self, num):
+    def _updateGuiSliceNum(self, num):
+        """ Keep the Main GUI upto date with other windows.
+        :param num: int
+        Slice number
+        :return:
+        """
         self._currSlice = num
         self._ui.spinSlice.setValue(num)
 
@@ -112,6 +118,15 @@ class ControlMainWindow(QtGui.QMainWindow):
             self._currTime= num
             self._mapGuiSetup.setDisplayTimepoint(num)
             self._setSlice()
+
+    def _displayDynamics(self):
+        """ Display previously loaded dynamics. """
+        data = self._mapGuiSetup.getDynamics()
+        self._ui.label.setData(data)
+        nzt, self._ny, self._nx = data.shape
+        self._nz = self._mapGuiSetup.getNz()
+        self._nt = nzt/self._nz
+        self._setGuiInfo('Dynamics')
 
     def _displayLatestMap(self, nt):
         """ Display the latest map produced by the analysis module. """
@@ -123,14 +138,16 @@ class ControlMainWindow(QtGui.QMainWindow):
     def _displayLatestMask(self, z):
         """ Display the latest mask produced by the analysis module. """
         self._ui.label.setROI(self._aifGuiSetup.getLatestMask())
-        self._changeGuiSlice(z)
+        self._updateGuiSliceNum(z)
 
     def _displayNpzFile(self):
         """ Load in data from a *.npz file and display it. """
-        file = QtGui.QFileDialog.getOpenFileName(None, 'Select npz file', 'D:\\ISMRMdataAIF', "npz files (*.npz)")
-        if file[0] == '':
-            return
-        fileName = file[0]
+        # file = QtGui.QFileDialog.getOpenFileName(None, 'Select npz file', 'D:\\ISMRMdataAIF\\pythonAIFs', "npz files (*.npz)")
+        # if file[0] == '':
+        #     return
+        # fileName = file[0]
+        # print fileName
+        fileName = 'D:\\ISMRMdataAIF\\pythonAIFs\\NKRF_EA14a\\13_DYN_17_125_SENSE.npz'
         npzData = np.load(fileName)
         if 'data' not in npzData or 'dims' not in npzData:
             message = "The npz file should contain the image array named \'data\' \n" \
@@ -148,15 +165,6 @@ class ControlMainWindow(QtGui.QMainWindow):
         seriesName = seriesName.replace('_', ': ', 1).replace("_", " ")
         self._setGuiInfo(seriesName)
         self._dcmDir = os.path.dirname(fileName)
-
-    def _displayDynamics(self):
-        """ Display previously loaded dynamics. """
-        data = self._mapGuiSetup.getDynamics()
-        self._ui.label.setData(data)
-        nzt, self._ny, self._nx = data.shape
-        self._nz = self._mapGuiSetup.getNz()
-        self._nt = nzt/self._nz
-        self._setGuiInfo('Dynamics')
 
     def _displaySeries(self, index):
         """ Gets the data for the selected series and displays an initial image. """
@@ -233,29 +241,7 @@ class ControlMainWindow(QtGui.QMainWindow):
         self._ui.label.setROImode(not self._ui.roiButton.isChecked())
         self._ui.label.setFreehandMode(self._ui.roiFreehand.isChecked())
 
-    def _saveSeries(self):
-        """ Save the Series currently displayed as a npz file. """
-        data = self._ui.label.getData()
-        name = self._ui.seriesLabel.text()
-        name = name.replace(' ', '_').replace(":", "").replace("/", "_").replace("\\", "_")
-        print name, data.shape
-        outputDir = QtGui.QFileDialog.getExistingDirectory(None, 'Select output directory', self._dcmDir)
-        if outputDir == '':
-            return
-
-        outFile = os.path.join(outputDir, name + '.npz')
-        if os.path.exists(outFile):
-            flags = QtGui.QMessageBox.StandardButton.Yes
-            flags |= QtGui.QMessageBox.StandardButton.No
-            question = "File \'" + outFile + "\' already exists. Would you like to overwrite?"
-            response = QtGui.QMessageBox.warning(self, "Warning", question, flags)
-            if response != QtGui.QMessageBox.Yes:
-                return
-
-        np.savez_compressed(outFile, data=data, dims=[self._nt, self._nz, self._ny, self._nx])
-        self._dcmDir = os.path.dirname(outFile)
-
-    def _saveROI(self, check = True, name=None):
+    def _saveROI(self, check=True, name=None):
         """ Save the ROI in a form that makes sense to PMI.
         :return:
         """
@@ -290,25 +276,40 @@ class ControlMainWindow(QtGui.QMainWindow):
             fname = fileBase + 'Rev(' + str(j).zfill(3) + ',000)' + '.raw'
             slice.astype('int8').tofile(fname)
 
+    def _saveSeries(self):
+        """ Save the Series currently displayed as a npz file. """
+        data = self._ui.label.getData()
+        name = self._ui.seriesLabel.text()
+        name = name.replace(' ', '_').replace(":", "").replace("/", "_").replace("\\", "_")
+        print name, data.shape
+        outputDir = QtGui.QFileDialog.getExistingDirectory(None, 'Select output directory', self._dcmDir)
+        if outputDir == '':
+            return
+
+        outFile = os.path.join(outputDir, name + '.npz')
+        if os.path.exists(outFile):
+            flags = QtGui.QMessageBox.StandardButton.Yes
+            flags |= QtGui.QMessageBox.StandardButton.No
+            question = "File \'" + outFile + "\' already exists. Would you like to overwrite?"
+            response = QtGui.QMessageBox.warning(self, "Warning", question, flags)
+            if response != QtGui.QMessageBox.Yes:
+                return
+
+        np.savez_compressed(outFile, data=data, dims=[self._nt, self._nz, self._ny, self._nx])
+        self._dcmDir = os.path.dirname(outFile)
+
     def _selectAIFvoxelsFromMaskAuto(self):
         """ Run algorithm that selects AIF voxels by generating an aorta mask,
         including requests for information from the user. """
 
-        fraction = [0.5, 0.75, 0.9, 0.95]
-        numVoxels = [50, 20, 10, 5]
+        # fraction = [0.5, 0.75, 0.9, 0.95]
+        fraction = [0.75]
+        # numVoxels = [50, 20, 10, 5]
 
-        accept = self._mapGuiSetup.calcMaxIntMap()
-        if not accept:
-            return
-        self._displayLatestMap(1)
-        self._mapGuiSetup.calcMeanBaseline()
-        self._aifGuiSetup.findCandidateAortaSeedAuto()
-        self._aifGuiSetup.floodfillFromSeed(self._currSlice)
 
         for i in range(0, len(fraction)):
-            self._aifGuiSetup.findAIFvoxelsAuto(False, fraction[i])
-            self._saveROI(False, 'aifFraction' + `fraction[i]`)
-            aif, aifMeasures = self._aifGuiSetup.getAIFdata()
+            aif, aifMeasures = self._aifMethods._selectAIFvoxelsFromMaskAuto(fraction[i], self._currSlice)
+            # self._saveROI(False, 'aifFraction' + `fraction[i]`)
             aif = np.insert(aif, 0, fraction[i])
             aifMeasures = np.insert(aifMeasures, 0, fraction[i])
             if i == 0:
@@ -318,54 +319,38 @@ class ControlMainWindow(QtGui.QMainWindow):
                 aifs = np.append(aifs, aif.reshape([len(aif), 1]), 1)
                 aifData = np.append(aifData, aifMeasures.reshape([1, len(aifMeasures)]), 0)
 
-        fileName = os.path.join(self._dcmDir, 'AIFcurves2.txt')
-        np.savetxt(fileName, aifs)
-        fileName = os.path.join(self._dcmDir, 'AIFmeasures2.txt')
-        np.savetxt(fileName, aifData)
+        # fileName = os.path.join(self._dcmDir, 'AIFcurves2.txt')
+        # np.savetxt(fileName, aifs)
+        # fileName = os.path.join(self._dcmDir, 'AIFmeasures2.txt')
+        # np.savetxt(fileName, aifData)
 
-        for i in range(0, len(numVoxels)):
-            self._aifGuiSetup.findAIFvoxelsMinNumber(False, numVoxels[i])
-            self._saveROI(False, 'aifNumber' + `numVoxels[i]`)
-            aif, aifMeasures = self._aifGuiSetup.getAIFdata()
-            aif = np.insert(aif, 0, numVoxels[i])
-            aifMeasures = np.insert(aifMeasures, 0, numVoxels[i])
-            if i == 0:
-                aifs = aif.reshape([len(aif), 1])
-                aifData = aifMeasures.reshape([1, len(aifMeasures)])
-            else:
-                aifs = np.append(aifs, aif.reshape([len(aif), 1]), 1)
-                aifData = np.append(aifData, aifMeasures.reshape([1, len(aifMeasures)]), 0)
+        # for i in range(0, len(numVoxels)):
+        #     self._aifGuiSetup.findAIFvoxelsMinNumber(False, numVoxels[i])
+        #     # self._saveROI(False, 'aifNumber' + `numVoxels[i]`)
+        #     aif, aifMeasures = self._aifGuiSetup.getAIFdata()
+        #     aif = np.insert(aif, 0, numVoxels[i])
+        #     aifMeasures = np.insert(aifMeasures, 0, numVoxels[i])
+        #     if i == 0:
+        #         aifs = aif.reshape([len(aif), 1])
+        #         aifData = aifMeasures.reshape([1, len(aifMeasures)])
+        #     else:
+        #         aifs = np.append(aifs, aif.reshape([len(aif), 1]), 1)
+        #         aifData = np.append(aifData, aifMeasures.reshape([1, len(aifMeasures)]), 0)
 
-        fileName = os.path.join(self._dcmDir, 'AIFcurvesNum2.txt')
-        np.savetxt(fileName, aifs)
-        fileName = os.path.join(self._dcmDir, 'AIFmeasuresNum2.txt')
-        np.savetxt(fileName, aifData)
+        # fileName = os.path.join(self._dcmDir, 'AIFcurvesNum2.txt')
+        # np.savetxt(fileName, aifs)
+        # fileName = os.path.join(self._dcmDir, 'AIFmeasuresNum2.txt')
+        # np.savetxt(fileName, aifData)
 
 
     def _selectAIFvoxelsFromMaskUser(self):
         """ Run algorithm that selects AIF voxels by generating an aorta mask,
         including requests for information from the user. """
-        accept = self._mapGuiSetup.calcMaxIntMap()
-        if not accept:
-            return
-        self._displayLatestMap(1)
-        self._mapGuiSetup.calcMeanBaseline()
-        accept = self._aifGuiSetup.findCandidateAortaSeeds(self._currSlice)
-        if accept:
-            accept = self._aifGuiSetup.floodfillFromSeed(self._currSlice)
-        if accept:
-            self._aifGuiSetup.findAIFvoxelsUser(self._currSlice)
-            # self._aifGuiSetup.findAIFvoxelsMinNumber(False)
+        self._aifMethods._selectAIFvoxelsFromMaskUser(self._currSlice)
 
     def _selectAIFvoxelsGlobal(self):
         """ Run algorithm that selects AIF voxels from the full image volume. No user input required. """
-        accept = self._mapGuiSetup.calcMaxIntMap()
-        if not accept:
-            return
-        self._displayLatestMap(1)
-        self._mapGuiSetup.calcMeanBaseline()
-        # self._aifGuiSetup.findAIFvoxelsMinNumber(True)
-        self._aifGuiSetup.findAIFvoxelsAuto(True, 0.90)
+        self._aifMethods._selectAIFvoxelsGlobal()
 
     def _setGuiInfo(self, seriesName):
         """ Set up the GUI and display the series. """

@@ -26,7 +26,12 @@ class AIFguiSetup(QtCore.QObject):
         self._aortaSeed = None
 
     def getAIFdata(self):
-        return self._aifSelector.getAIFcurve()
+        """ Return the value of the AIF at every time point and measures from the data.
+
+        :return: np.array [np.array(double), inp.array[int, int, double, double, double]]
+        AIF, [numBaseline, numVoxels, aveBaseline, maxDiff, maxVal]
+        """
+        return self._aifSelector.getAIFcurveAndMeasures()
 
     def getLatestMask(self):
         """ Return the last binary mask generated.
@@ -35,54 +40,22 @@ class AIFguiSetup(QtCore.QObject):
         """
         return self._latestMask
 
-    def findCandidateAortaSeedAuto(self):
-        self._aortaSeed, self._latestMask = self._aifSelector.findCandidateAortaSeed(3, 13)
-
-    def findCandidateAortaSeeds(self, slice):
-        """ Request the number of candidates from the user, generate a mask of the candidates and signal.
-
-        :param slice: int
-        The slice currently displayed in the main window.
-        :return: bool
-        True if the user wishes to continue with the process, False otherwise.
-        """
-        self._requestKernelSize(slice)
-        self._selectCandidateAortaSeed()
-        accept = self._inputDialog.exec_()
-
-        if accept == QtGui.QDialog.Accepted:
-            # self._aortaSeed, self._latestMask = self._aifSelector.getAortaSeed()
-            # print self._aortaSeed
-            # self.maskReady.emit()
-            return True
-
-        return False
-
     def findAIFvoxelsAuto(self, useKernel, fraction):
-        # min = 5
-        # self._latestMask = self._aifSelector.findAIFpatchBinaryChop(useKernel, min)
-        if useKernel:
-            self._latestMask = self._aifSelector.findAIFthreshold(useKernel, fraction)
-        else:
-            self._latestMask = self._aifSelector.findAIFthreshold(useKernel, fraction)
+        """ Generates and displays a mask of the AIF voxels from the aorta mask or the full volume if useKernel is True.
+        No user input in required.
 
-        z, x, y = np.where(self._latestMask == True)
-        self.maskReady.emit(z[0]+1)
-        aif, aifMeasures = self._aifSelector.getAIFcurve()
-        self._displayAIF(aif)
+        :param useKernel: bool
+        If True uses the full volume and kernel based scores otherwise uses the aorta mask.
+        :param fraction: int
+        Value between 0 and 1. Fraction of the maximum score used to select voxels
+        :return:
+        """
 
-    def findAIFvoxelsMinNumber(self, useKernel, min = 5):
-        # if not useKernel:
-        #     self._requestNumber()
-        #     accept = self._input.exec_()
-        #     if accept == QtGui.QDialog.Rejected:
-        #         return
-        #     else:
-        #         min = self._mininumVoxelInput.spinBox.value()
-        self._latestMask = self._aifSelector.findAIFpatchBinaryChop(useKernel, min)
-        z, x, y = np.where(self._latestMask == True)
+        self._latestMask = self._aifSelector.findAIFvoxels(useKernel, fraction)
+
+        z, x, y = np.where(self._latestMask)
         self.maskReady.emit(z[0]+1)
-        aif, aifMeasures = self._aifSelector.getAIFcurve()
+        aif, aifMeasures = self._aifSelector.getAIFcurveAndMeasures()
         self._displayAIF(aif)
 
     def findAIFvoxelsUser(self, slice):
@@ -108,41 +81,40 @@ class AIFguiSetup(QtCore.QObject):
             self._latestMask = self._aifSelector.pickAIFpatch()
             z, x, y = np.where(self._latestMask == True)
             self.maskReady.emit(z[0]+1)
-            aif, aifMeasures = self._aifSelector.getAIFcurve()
+            aif, aifMeasures = self._aifSelector.getAIFcurveAndMeasures()
             self._displayAIF(aif)
 
-    # def floodfillFromSeed(self, slice):
-    #     """ Request the threshold from the user, generate and aorta mask and signal.
-    #
-    #     :param slice: int
-    #     The slice displayed on the main window
-    #     :return: bool
-    #     True if teh user wishes to continue with the process, False otherwise
-    #     """
-    #     details = 'A flood fill has been performed from the aorta seed. ' \
-    #               'The voxels with intensity above the threshold have been selected. ' \
-    #               'Adjust the threshold until only the aorta is selected. '
-    #     self._requestThreshold(self._generateAortaMaskFromThreshold, "Threshold for AortaMask", details, slice)
-    #     self._generateAortaMaskFromThreshold()
-    #     accept = self._inputDialog.exec_()
-    #
-    #     if accept == QtGui.QDialog.Accepted:
-    #         self._generateAortaMaskFromThreshold()
-    #         self._aifSelector.setAortaMask(self._latestMask)
-    #         return True
-    #
-    #     return False
+    def findCandidateAortaSeedUser(self, slice):
+        """ Request the number of candidates from the user, generate a mask of the candidates and signal.
+
+        :param slice: int
+        The slice currently displayed in the main window.
+        :return: bool
+        True if the user wishes to continue with the process, False otherwise.
+        """
+        self._requestKernelSize(slice)
+        self._selectCandidateAortaSeed()
+        accept = self._inputDialog.exec_()
+
+        if accept == QtGui.QDialog.Accepted:
+            return True
+
+        return False
 
     def floodfillFromSeed(self, slice):
+        """ Flood fill from the seed to within 475 to 525 voxels and signal mask is ready.
 
+        :param slice: int
+        The current slice being displayed
+        :return:
+        """
+        if self._aortaSeed is None:
+            self._aortaSeed, self._latestMask = self._aifSelector.findCandidateAortaSeed(3, 13)
         self._latestMask = self._aifSelector.floodFillAortaToNumVoxels(self._aortaSeed)
         self._aifSelector.setAortaMask(self._latestMask)
         z, x, y = np.where(self._latestMask == True)
         sliceNum = z[z.shape[0]/2] + 1
         self.maskReady.emit(sliceNum)
-
-        return True
-
 
     def reset(self):
         """ Reset state of object.
@@ -262,7 +234,7 @@ class AIFguiSetup(QtCore.QObject):
         """
         threshold = self._thresholdInput.spinBox_thresh.value()
         fraction = threshold / 100.0
-        self._latestMask = self._aifSelector._generateCandidateAIFvoxelsMask(fraction)
+        self._latestMask = self._aifSelector._generateCandidateAIFvoxelsMask(fraction, False)
         z, x, y = np.where(self._latestMask == True)
         self.maskReady.emit(self._thresholdInput.spinBox_slice.value())
 

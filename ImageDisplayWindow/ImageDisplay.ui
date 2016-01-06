@@ -334,8 +334,8 @@
     <addaction name="actionMaximum_Intensity_Map"/>
     <addaction name="actionMean_baseline_image"/>
     <addaction name="actionMaximum_intensity_timepoint_map"/>
-    <addaction name="actionAorta_seed_score_map"/>
     <addaction name="actionZeros_map"/>
+    <addaction name="actionAorta_seed_score_map"/>
    </widget>
    <widget class="QMenu" name="menuROI">
     <property name="title">
@@ -352,12 +352,12 @@
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionMaximum_Intensity_Map">
    <property name="text">
-    <string>Maximum Intensity Map</string>
+    <string>Maximum intensity map</string>
    </property>
   </action>
   <action name="actionMean_baseline_image">
    <property name="text">
-    <string>Mean baseline image</string>
+    <string>Mean baseline map</string>
    </property>
   </action>
   <action name="actionAorta_Seed_Voxel">
@@ -392,7 +392,7 @@
   </action>
   <action name="actionMaximum_intensity_timepoint_map">
    <property name="text">
-    <string>Maximum intensity timepoint map</string>
+    <string>Time to peak map</string>
    </property>
   </action>
   <action name="actionAorta_seed_score_map">
@@ -412,7 +412,7 @@
   </action>
   <action name="actionZeros_map">
    <property name="text">
-    <string>Zeros map</string>
+    <string>Zero minimum intensity map</string>
    </property>
   </action>
   <action name="actionShow_data">
