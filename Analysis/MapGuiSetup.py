@@ -1,9 +1,8 @@
-from Analysis import AnalysisInput, MapGenerator
-
 __author__ = 'medabana'
 
 from PySide import QtGui, QtCore
 
+from Analysis import AnalysisInput
 from MapGenerator import MapGenerator
 
 class MapGuiSetup(QtCore.QObject):
@@ -23,23 +22,8 @@ class MapGuiSetup(QtCore.QObject):
         :return: np.bool double
         Dynamic series.
         """
-        return self._mapGenerator.getDynamics()
+        return self._mapGenerator.dynamics
 
-    def getLatestMap(self):
-        """ Return the last map generated.
-
-        :return: np.array(np.bool)
-        Boolean mask
-        """
-        return self._latestMap
-
-    def getLatestMapName(self):
-        """ Return the name of the last map generated
-
-        :return: string
-        map name
-        """
-        return self._latestMapName
 
     def getMapGenerator(self):
         """ Return the object used for generating the maps
@@ -59,12 +43,12 @@ class MapGuiSetup(QtCore.QObject):
             accept = self._input.exec_()
 
             if accept == QtGui.QDialog.Accepted:
-                self._mapGenerator.setNumBaseline(self._baselineNumInput.spinBox.value())
+                self._mapGenerator.numBaseline = self._baselineNumInput.spinBox.value()
             else:
                 return False
 
-        self._latestMap = self._mapGenerator.maximumIntensityMap()
-        self._latestMapName = 'Maximum Intensity Map'
+        self.latestMap = self._mapGenerator.maximumIntensityMap()
+        self.latestMapName = 'Maximum Intensity Map'
 
         if giveSignal:
             self.mapReady.emit(1)
@@ -83,12 +67,12 @@ class MapGuiSetup(QtCore.QObject):
             accept = self._input.exec_()
 
             if accept == QtGui.QDialog.Accepted:
-                self._mapGenerator.setNumBaseline(self._baselineNumInput.spinBox.value())
+                self._mapGenerator.numBaseline = self._baselineNumInput.spinBox.value()
             else:
                 return False
 
-        self._latestMap = self._mapGenerator.baselineMap()
-        self._latestMapName = 'Mean Baseline Map'
+        self.latestMap = self._mapGenerator.baselineMap()
+        self.latestMapName = 'Mean Baseline Map'
 
         if giveSignal:
             self.mapReady.emit(1)
@@ -115,12 +99,12 @@ class MapGuiSetup(QtCore.QObject):
             accept = self._input.exec_()
 
             if accept == QtGui.QDialog.Accepted:
-                self._mapGenerator.setNumBaseline(self._baselineNumInput.spinBox.value())
+                self._mapGenerator.numBaseline = self._baselineNumInput.spinBox.value()
             else:
                 return False
 
-        self._latestMap = self._mapGenerator.timeToPeakMap()
-        self._latestMapName = 'Maximum Intensity Timepoint Map'
+        self.latestMap = self._mapGenerator.timeToPeakMap()
+        self.latestMapName = 'Maximum Intensity Timepoint Map'
 
         if giveSignal:
             self.mapReady.emit(1)
@@ -138,12 +122,12 @@ class MapGuiSetup(QtCore.QObject):
             accept = self._input.exec_()
 
             if accept == QtGui.QDialog.Accepted:
-                self._mapGenerator.setNumBaseline(self._baselineNumInput.spinBox.value())
+                self._mapGenerator.numBaseline = self._baselineNumInput.spinBox.value()
             else:
                 return False
 
-        self._latestMap = self._mapGenerator.getZeroMinIntensityMap()
-        self._latestMapName = 'Map of zeros'
+        self.latestMap = self._mapGenerator.getZeroMinIntensityMap()
+        self.latestMapName = 'Map of zeros'
 
         if giveSignal:
             self.mapReady.emit(1)
@@ -155,8 +139,8 @@ class MapGuiSetup(QtCore.QObject):
 
         :return:
         """
-        self._latestMap = self._mapGenerator.getScoreMap()
-        self._latestMapName = 'Aorta seed score maps'
+        self.latestMap = self._mapGenerator.scoreMap
+        self.latestMapName = 'Aorta seed score maps'
         self.mapReady.emit(1)
 
     def reset(self):
@@ -164,13 +148,13 @@ class MapGuiSetup(QtCore.QObject):
 
         :return:
         """
+        self.latestMap = None
+        self.latestMapName = None
         self._nt = 0
         self._currTime = 0
         self._input = None
         self._baselineNumInput = None
         self._mapGenerator.reset()
-        self._latestMap = None
-        self._latestMapName = None
 
     def setDisplayTimepoint(self, t):
         """ Set the timepoint to be used for any user dialogs

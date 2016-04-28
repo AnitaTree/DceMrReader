@@ -4,17 +4,18 @@ import unittest
 
 import numpy as np
 
-from Analysis.MapGenerator import Analysis
-
+from Analysis.MapGenerator import MapGenerator
 
 class MaxIntTest(unittest.TestCase):
     def test_simple1(self):
         a = range(0, 50*3*3)
         a = np.reshape(a, [50, 3, 3])
+        a[0:41:10, :, :] = 0
 
-        xx = Analysis()
-        xx.setData(a)
-        mp = xx.maximumIntensityMap(3, 3, 5, 10)
+        xx = MapGenerator()
+        xx.setDynamics(a, 10)
+        xx.numBaseline = 1
+        mp = xx.maximumIntensityMap()
 
         expectedDims = [5, 3, 3]
 
@@ -32,11 +33,13 @@ class MaxIntTest(unittest.TestCase):
             a[j, :, :] = i
             i = i - 1
 
-        b = np.concatenate((a, a+1, a+2, a+3))
+        b = np.concatenate([a, a+1, a+2, a+3])
+        b[0:31:10, :, :] = 0
 
-        xx = Analysis()
-        xx.setData(b)
-        mp = xx.maximumIntensityMap(3, 3, 4, 10)
+        xx = MapGenerator()
+        xx.setDynamics(b, 10)
+        xx.numBaseline = 1
+        mp = xx.maximumIntensityMap()
 
         expectedDims = [4, 3, 3]
 

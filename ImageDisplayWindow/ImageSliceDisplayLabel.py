@@ -12,13 +12,13 @@ class ImageSliceDisplayLabel(QtGui.QLabel):
     def __init__(self, parent=None):
         """ Set up QImage and roi modes. """
         super(ImageSliceDisplayLabel, self).__init__(parent)
-        self._qIm = QtGui.QImage(450, 450, QtGui.QImage.Format_RGB32)
-        self._roi = None
-        self._roiMode = False
+        self._data = None
         self._freehandMode = False
+        self._roiMode = False
+        self._roi = None
         self._currSlice = None
         self._currPath = 0
-        self._data = None
+        self._qIm = QtGui.QImage(450, 450, QtGui.QImage.Format_RGB32)
 
     def clearROI(self):
         """ Clear the whole ROI. """
@@ -33,7 +33,8 @@ class ImageSliceDisplayLabel(QtGui.QLabel):
         self._setImageSlice()
         self._displayImageSlice()
 
-    def getData(self):
+    @property
+    def data(self):
         """ Return the currently displayed data
 
         :return: np.array
@@ -41,18 +42,8 @@ class ImageSliceDisplayLabel(QtGui.QLabel):
         """
         return self._data
 
-    def getROI(self):
-        """ Return the current ROI """
-        return self._roi
-
-    def highlightVoxel(self, voxel):
-        """ Draw box around the given voxel. """
-        path = QtGui.QPainterPath(QtCore.QPoint())
-        path.addRect(voxel[2]-1, voxel[1]-1, 2, 2)
-        self._currPath = path
-        self.update()
-
-    def setData(self, imData):
+    @data.setter
+    def data(self, imData):
         """ Set the data for the image and a new clear ROI. """
         self._data = imData
         self._dims = imData.shape
@@ -62,15 +53,19 @@ class ImageSliceDisplayLabel(QtGui.QLabel):
             self._maxVal = 1
         self._roi = np.zeros(self._dims, np.bool)
 
-    def setFreehandMode(self, mode):
-        """ Set the freehand ROI drawing mode. """
-        self._freehandMode = mode
+    def highlightVoxel(self, voxel):
+        """ Draw box around the given voxel. """
+        path = QtGui.QPainterPath(QtCore.QPoint())
+        path.addRect(voxel[2]-1, voxel[1]-1, 2, 2)
+        self._currPath = path
+        self.update()
 
-    def setROImode(self, mode):
-        """ Set the rectangular ROI drawing mode. """
-        self._roiMode = mode
+    @property
+    def roi(self):
+        return self._roi
 
-    def setROI(self, region):
+    @roi.setter
+    def roi(self, region):
         """ Set the ROI to region. """
         if region.shape == self._roi.shape:
             self._roi = region

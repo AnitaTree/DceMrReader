@@ -1,7 +1,8 @@
 __author__ = 'medabana'
 
-import os
 import dicom
+import logging
+import os
 import numpy as np
 from datetime import datetime
 from collections import Counter
@@ -10,6 +11,7 @@ class PatientDirectoryReader(object):
     """ Responsible for reading image and series data and information. """
     def __init__(self, dirNm):
         """ Set up storage for series information. """
+        self._logger = logging.getLogger(__name__)
         self._dirNm = dirNm
         self._fileType = None
         self._suidNum = 0
@@ -26,6 +28,7 @@ class PatientDirectoryReader(object):
         """ Get the image data for the series. """
         suid= self._suidAndTimeForProtocols[protName][0]
         if self._dataSuid != suid:
+            self._logger.info('getImageData %s' % protName)
             self._setSeriesInfoAndData(suid)
         return self._data
 

@@ -4,7 +4,7 @@ import unittest
 
 import numpy as np
 
-from Analysis.MapGenerator import Analysis
+from Analysis.AIFselector import AIFselector
 
 
 class FloodFillTest(unittest.TestCase):
@@ -12,7 +12,7 @@ class FloodFillTest(unittest.TestCase):
         a = range(0, 5*3*3)
         a = np.reshape(a, [5, 3, 3])
 
-        xx = Analysis()
+        xx = AIFselector()
         xx.setData(a)
         mask= np.zeros([5, 3, 3])
         xx._floodfillMask([4, 1, 1], 30, mask)
@@ -29,7 +29,7 @@ class FloodFillTest(unittest.TestCase):
             a[j, 2:4, 2:4] = i
             i -= 1
 
-        xx = Analysis()
+        xx = AIFselector()
         xx.setData(a)
         mask= np.zeros(a.shape)
         xx._floodfillMask([1, 2, 2], 2, mask)

@@ -1,5 +1,7 @@
 __author__ = 'medabana'
 
+import logging
+
 from Analysis.MapGuiSetup import MapGuiSetup
 from Analysis.AIFguiSetup import AIFguiSetup
 
@@ -10,6 +12,7 @@ class AIFmethods():
         :param mapGui: MapGuiSetup
         :return:
         """
+        self._logger = logging.getLogger(__name__)
         self._aifGuiSetup = aifGui
         self._mapGuiSetup = mapGui
 
@@ -23,12 +26,13 @@ class AIFmethods():
         The slice currently being displayed.
         :return:
         """
+        self._logger.info('_selectAIFvoxelsFromMaskAuto')
         accept = self._mapGuiSetup.getMaxIntMap()
         if not accept:
             return
         self._mapGuiSetup.getMeanBaselineMap(False)
         self._aifGuiSetup.floodfillFromSeed(currSlice)
-        self._aifGuiSetup.findAIFvoxelsAuto(False, fraction)
+        self._aifGuiSetup.findAIFvoxelsAuto(True)
         aif, aifMeasures = self._aifGuiSetup.getAIFdata()
 
         return [aif, aifMeasures]
@@ -47,8 +51,8 @@ class AIFmethods():
         self._mapGuiSetup.getMeanBaselineMap(False)
         accept = self._aifGuiSetup.findCandidateAortaSeedUser(currSlice)
         if accept:
-            self._aifGuiSetup.floodfillFromSeed(currSlice)
-            self._aifGuiSetup.findAIFvoxelsUser(currSlice)
+            sliceNum = self._aifGuiSetup.floodfillFromSeed(currSlice)
+            self._aifGuiSetup.findAIFvoxelsUser(sliceNum)
             # self._aifGuiSetup.findAIFvoxelsMinNumber(False)
 
     def _selectAIFvoxelsGlobal(self):
@@ -60,4 +64,4 @@ class AIFmethods():
             return
         self._mapGuiSetup.getMeanBaselineMap(False)
         # self._aifGuiSetup.findAIFvoxelsMinNumber(True)
-        self._aifGuiSetup.findAIFvoxelsAuto(True, 0.75)
+        self._aifGuiSetup.findAIFvoxelsAuto(False)
