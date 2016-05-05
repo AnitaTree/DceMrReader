@@ -1,8 +1,9 @@
 __author__ = 'medabana'
 
-from PatientDirectoryReader import PatientDirectoryReader
 import dicom
 import os
+
+from DicomReader.PatientDirectoryReader import PatientDirectoryReader
 
 class RecursiveDirectoryReader(PatientDirectoryReader):
     """Responsible for reading image data when there is not a DICOMDIR file."""
@@ -11,7 +12,7 @@ class RecursiveDirectoryReader(PatientDirectoryReader):
         self._gatherSeriesFileNames(dirNm)
 
     def _gatherSeriesFileNames(self, dcmDir):
-        """ Get the series information, sort and enumerate the items. """
+        """ Get the series information, and generate a sorted list of names."""
         self._gatherSeriesFileNamesRecursive(dcmDir)
         seriesSorted = sorted(self._suidAndTimeForProtocols.items(), key=lambda info: info[1])
         for i, series in enumerate(seriesSorted):
@@ -52,7 +53,7 @@ class RecursiveDirectoryReader(PatientDirectoryReader):
                         self._fileType = 'DICOM'
             except Exception as why:
                 if self._fileType == 'DICOM':
-                    print file + " ", why
+                    # print file + " ", why
                     raise Exception
         if self._fileType == 'NEMA' or self._fileType is None:
             try:
@@ -69,11 +70,12 @@ class RecursiveDirectoryReader(PatientDirectoryReader):
                 except Exception:
                     raise Exception
             except Exception as why:
-                    print file + " ", why
+                    # print file + " ", why
                     raise Exception
         try:
             protName = dcm.SeriesDescription
         except Exception as why:
-            print file + " ", why
+            # print file + " ", why
             raise Exception
         return protName.lstrip(), dcm.SeriesInstanceUID, self._getImageTime(dcm)
+
