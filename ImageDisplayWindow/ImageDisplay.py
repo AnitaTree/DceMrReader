@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'ImageDisplay.ui'
 #
-# Created: Mon Jan 18 16:21:05 2016
+# Created: Thu May 05 09:38:21 2016
 #      by: pyside-uic 0.2.15 running on PySide 1.2.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,7 +12,7 @@ from PySide import QtCore, QtGui
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(513, 637)
+        MainWindow.resize(510, 637)
         MainWindow.setUnifiedTitleAndToolBarOnMac(False)
         self.centralwidget = QtGui.QWidget(MainWindow)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
@@ -140,7 +140,7 @@ class Ui_MainWindow(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setObjectName("scrollArea")
         self.scrollAreaWidgetContents = QtGui.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 493, 450))
+        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 490, 450))
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Ignored, QtGui.QSizePolicy.Ignored)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -169,7 +169,7 @@ class Ui_MainWindow(object):
         self.gridLayout.addLayout(self.verticalLayout_6, 0, 0, 1, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtGui.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 513, 21))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 510, 21))
         self.menubar.setObjectName("menubar")
         self.menuImage = QtGui.QMenu(self.menubar)
         self.menuImage.setObjectName("menuImage")
@@ -183,8 +183,6 @@ class Ui_MainWindow(object):
         self.menuAnalysis.setObjectName("menuAnalysis")
         self.menuROI = QtGui.QMenu(self.menubar)
         self.menuROI.setObjectName("menuROI")
-        self.menuModel_Fitting = QtGui.QMenu(self.menubar)
-        self.menuModel_Fitting.setObjectName("menuModel_Fitting")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtGui.QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
@@ -252,11 +250,9 @@ class Ui_MainWindow(object):
         self.menuROI.addAction(self.actionSelect_AIF_voxels)
         self.menuROI.addAction(self.actionAorta_mask_method_auto)
         self.menuROI.addAction(self.actionSelect_voxels_2)
-        self.menuModel_Fitting.addAction(self.actionFit_2CFM)
         self.menubar.addAction(self.menuImage.menuAction())
         self.menubar.addAction(self.menuAnalysis.menuAction())
         self.menubar.addAction(self.menuROI.menuAction())
-        self.menubar.addAction(self.menuModel_Fitting.menuAction())
 
         self.retranslateUi(MainWindow)
         QtCore.QObject.connect(self.spinSlice, QtCore.SIGNAL("valueChanged(int)"), self.sliderSlice.setValue)
@@ -266,7 +262,7 @@ class Ui_MainWindow(object):
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
-        MainWindow.setWindowTitle(QtGui.QApplication.translate("MainWindow", "Time Series Viewer", None, QtGui.QApplication.UnicodeUTF8))
+        MainWindow.setWindowTitle(QtGui.QApplication.translate("MainWindow", "DCE-MR analysis: FOR RESEARCH PURPOSES ONLY.", None, QtGui.QApplication.UnicodeUTF8))
         self.label_4.setText(QtGui.QApplication.translate("MainWindow", "Series name", None, QtGui.QApplication.UnicodeUTF8))
         self.label_5.setText(QtGui.QApplication.translate("MainWindow", "File name", None, QtGui.QApplication.UnicodeUTF8))
         self.label_3.setText(QtGui.QApplication.translate("MainWindow", "time point", None, QtGui.QApplication.UnicodeUTF8))
@@ -282,7 +278,6 @@ class Ui_MainWindow(object):
         self.menuLoad_ROI.setTitle(QtGui.QApplication.translate("MainWindow", "Load ROI", None, QtGui.QApplication.UnicodeUTF8))
         self.menuAnalysis.setTitle(QtGui.QApplication.translate("MainWindow", "Analysis", None, QtGui.QApplication.UnicodeUTF8))
         self.menuROI.setTitle(QtGui.QApplication.translate("MainWindow", "AIF", None, QtGui.QApplication.UnicodeUTF8))
-        self.menuModel_Fitting.setTitle(QtGui.QApplication.translate("MainWindow", "Model Fitting", None, QtGui.QApplication.UnicodeUTF8))
         self.actionMaximum_Intensity_Map.setText(QtGui.QApplication.translate("MainWindow", "Maximum intensity map", None, QtGui.QApplication.UnicodeUTF8))
         self.actionMean_baseline_image.setText(QtGui.QApplication.translate("MainWindow", "Mean baseline map", None, QtGui.QApplication.UnicodeUTF8))
         self.actionAorta_Seed_Voxel.setText(QtGui.QApplication.translate("MainWindow", "Aorta Seed Voxel", None, QtGui.QApplication.UnicodeUTF8))

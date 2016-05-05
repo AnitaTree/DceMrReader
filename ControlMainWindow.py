@@ -71,7 +71,7 @@ class ControlMainWindow(QtGui.QMainWindow):
         self._ui.roiButton.pressed.connect(self._roiPressed)
         self._ui.roiFreehand.pressed.connect(self._freehandPressed)
 
-        self._displayNpzFile()
+        # self._displayNpzFile()
 
     def closeEvent(self, *args, **kwargs):
         """ Closes any open windows. """
@@ -146,11 +146,10 @@ class ControlMainWindow(QtGui.QMainWindow):
 
     def _displayNpzFile(self):
         """ Load in data from a *.npz file and display it. """
-        file = QtGui.QFileDialog.getOpenFileName(None, 'Select npz file', 'D:\\ISMRMdataAIF\\pythonAIFs', "npz files (*.npz)")
+        file = QtGui.QFileDialog.getOpenFileName(None, 'Select npz file', 'C:\\', "npz files (*.npz)")
         if file[0] == '':
             return
         fileName = file[0]
-        # fileName = 'D:\\ISMRMdataAIF\\pythonAIFs\\NKRF_EA14a\\13_DYN_17_125_SENSE.npz'
         npzData = np.load(fileName)
         if 'data' not in npzData or 'dims' not in npzData:
             message = "The npz file should contain the image array named \'data\' \n" \
@@ -192,12 +191,10 @@ class ControlMainWindow(QtGui.QMainWindow):
     def _displaySeriesNames(self):
         """ Request the DICOM directory from the user and displays the found protocols. """
         # Ask for the DICOM directory.
-        self._dcmDir = QtGui.QFileDialog.getExistingDirectory(None, 'Select DICOM directory', 'D:\\renalDatabase_anon')
+        self._dcmDir = QtGui.QFileDialog.getExistingDirectory(None, 'Select DICOM directory', 'C:\\')
         if self._dcmDir == '':
             return
 
-        # self._dcmDir = 'D:\\renalDatabase_anon\\NKRF\\AW27'
-        # self._dcmDir = 'D:\\renalDatabase_anon\\1Tdata\\AR1'
         print self._dcmDir
 
         self._setUpLogging()

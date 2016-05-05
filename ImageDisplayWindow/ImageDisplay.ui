@@ -6,12 +6,12 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>513</width>
+    <width>510</width>
     <height>637</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Time Series Viewer</string>
+   <string>DCE-MR analysis: FOR RESEARCH PURPOSES ONLY.</string>
   </property>
   <property name="unifiedTitleAndToolBarOnMac">
    <bool>false</bool>
@@ -252,7 +252,7 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>493</width>
+           <width>490</width>
            <height>450</height>
           </rect>
          </property>
@@ -307,7 +307,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>513</width>
+     <width>510</width>
      <height>21</height>
     </rect>
    </property>
@@ -362,16 +362,9 @@
     <addaction name="actionAorta_mask_method_auto"/>
     <addaction name="actionSelect_voxels_2"/>
    </widget>
-   <widget class="QMenu" name="menuModel_Fitting">
-    <property name="title">
-     <string>Model Fitting</string>
-    </property>
-    <addaction name="actionFit_2CFM"/>
-   </widget>
    <addaction name="menuImage"/>
    <addaction name="menuAnalysis"/>
    <addaction name="menuROI"/>
-   <addaction name="menuModel_Fitting"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionMaximum_Intensity_Map">
