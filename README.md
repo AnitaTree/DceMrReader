@@ -16,3 +16,5 @@ This is not a fully tested and complete application.
 But I thought some of the functionality might be of use to the MR research community so have made it available.
 
 Made available under the MIT license. Copyright (c) 2016 Anita Banerji, University of Leeds.
+
+The development of this code up to May 2016 was funded by Kidney Research UK and was written by Anita Banerji whilst working for the University of Leeds.
