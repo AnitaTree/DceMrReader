@@ -179,7 +179,7 @@ class ControlMainWindow(QtGui.QMainWindow):
 
         # get the image data and info
         data = self._seriesReader.getImageData(seriesName)
-        self._ui.label.setData(data)
+        self._ui.label.data = data
         self._files = self._seriesReader.getOrderedFileList(seriesName)
         self._nx, self._ny, self._nz, self._nt = self._seriesReader.getSequenceParameters(seriesName)
         self._mapGuiSetup.reset()
