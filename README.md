@@ -2,7 +2,7 @@
 Python code for reading in DICOM DCE-MRI series and selecting AIF voxels.
 
 We would be grateful if you would reference the following abstract if you use this code:
-Anita Banerji, Derek Magee, Constantina Chrysochou, Philip Kalra, David Buckley, and Steven Sourbron. "Assessment of an automated method for AIF voxel selection for renal filtration rate estimation from DCE-MRI data." Proceedings of the ISMRM (Singapore), 2016.
+Anita Banerji, Derek Magee, Constantina Chrysochou, Philip Kalra, David Buckley, and Steven Sourbron. "Assessment of an automated method for AIF voxel selection for renal filtration rate estimation from DCE-MRI data." Proceedings of the ISMRM (Singapore), 2016: 2865.
 
 NOT FOR CLINICAL USE. FOR RESEARCH PURPOSES ONLY.
 
