@@ -25,4 +25,4 @@ It relies on various Python libraries and also the QT GUI libraries through the 
 
 Made available under the MIT license. Copyright (c) 2016 Anita Banerji, University of Leeds.
 
-The development of this code up to May 2016 was funded by Kidney Research UK and was written by Anita Banerji whilst working at the University of Leeds.
+The development of this code up to May 2016 was funded by Kidney Research UK and was written by Anita Banerji whilst working at the University of Leeds. This code was made available with the approval of Kidney Research UK and the University of Leeds.
